@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, CreditCard, Smartphone, Shield, Zap } from 'lucide-react';
+import { CheckCircle, XCircle, CreditCard, Smartphone, Shield, Zap, Lock } from 'lucide-react';
 
 interface Plan {
   id: string;
@@ -303,8 +303,9 @@ export default function PremiumPage() {
                 )}
               </button>
 
-              <p className="text-center text-sm text-gray-500 mt-4">
-                🔒 Secure payment powered by EasyPaisa & JazzCash
+              <p className="text-center text-sm text-gray-500 mt-4 flex items-center justify-center gap-2">
+                <Lock className="w-4 h-4" />
+                <span>Secure payment powered by EasyPaisa & JazzCash</span>
               </p>
             </motion.div>
           )}

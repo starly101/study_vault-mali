@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/hooks/use-user';
+import { CheckCircle } from 'lucide-react';
 
 // ============================================================================
 // SPRING PRESETS (from syntax-enforcer.md)
@@ -348,8 +349,9 @@ const SuccessBanner: React.FC<SuccessBannerProps> = ({ planName, expiresAt, onDi
         </motion.div>
 
         <div className="flex-1">
-          <h4 className="text-lg font-bold text-green-800 dark:text-green-200 mb-1">
-            🎉 Payment Successful!
+          <h4 className="text-lg font-bold text-green-800 dark:text-green-200 mb-1 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5" />
+            <span>Payment Successful!</span>
           </h4>
           <p className="text-green-700 dark:text-green-300 mb-2">
             Your <span className="font-semibold">{planName}</span> plan is now active.
