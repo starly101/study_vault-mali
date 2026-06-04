@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, ThumbsUp, BookOpen } from 'lucide-react';
+import { Star, ThumbsUp, BookOpen, Check, X, Lightbulb } from 'lucide-react';
 
 interface Question {
   _id: string;
@@ -227,7 +227,11 @@ export default function QuizEngine({
               }`}
             >
               <div className="flex items-start gap-3">
-                <span className="text-xl">{result.isCorrect ? '✓' : '✗'}</span>
+                {result.isCorrect ? (
+                  <Check className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <X className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                )}
                 <div className="flex-1">
                   <p className="font-medium text-gray-800 mb-2">
                     Q{idx + 1}: {questions[idx]?.question}
@@ -243,8 +247,9 @@ export default function QuizEngine({
                     </p>
                   )}
                   {result.explanation && (
-                    <p className="text-sm text-gray-600 mt-2 italic">
-                      💡 {result.explanation}
+                    <p className="text-sm text-gray-600 mt-2 italic flex items-start gap-2">
+                      <Lightbulb className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <span>{result.explanation}</span>
                     </p>
                   )}
                 </div>
@@ -366,14 +371,23 @@ export default function QuizEngine({
                     ? 'bg-emerald-50 border border-emerald-200'
                     : 'bg-amber-50 border border-amber-200'
                 }`}>
-                  <p className="font-medium mb-2">
-                    {selectedAnswer === currentQuestion.correct_answer
-                      ? '✓ Correct!'
-                      : '✗ Not quite right'}
+                  <p className="font-medium mb-2 flex items-center gap-2">
+                    {selectedAnswer === currentQuestion.correct_answer ? (
+                      <>
+                        <Check className="w-5 h-5 text-emerald-600" />
+                        <span>Correct!</span>
+                      </>
+                    ) : (
+                      <>
+                        <X className="w-5 h-5 text-red-600" />
+                        <span>Not quite right</span>
+                      </>
+                    )}
                   </p>
                   {currentQuestion.explanation && (
-                    <p className="text-sm text-gray-700">
-                      💡 {currentQuestion.explanation}
+                    <p className="text-sm text-gray-700 flex items-start gap-2">
+                      <Lightbulb className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <span>{currentQuestion.explanation}</span>
                     </p>
                   )}
                 </div>

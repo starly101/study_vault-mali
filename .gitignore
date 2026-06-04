@@ -1,6 +1,7 @@
 ```gitignore
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Build outputs
 dist/
@@ -8,19 +9,11 @@ build/
 .next/
 out/
 
-# Logs
-*.log
-
 # Environment variables
 .env
 .env.local
-*.env.*
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
+.env.*
+!.env.example
 
 # Python
 __pycache__/
@@ -28,50 +21,43 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
+env/
 venv/
 .venv/
-.env
-.ENV
-.env.*
-.ENV.*
-
-# Coverage reports
-coverage/
-htmlcov/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
 .coverage
-
-# OS generated files
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/modules/
+*.sublime-workspace
+.pytest_cache/
+.hypothesis/
 .DS_Store
 Thumbs.db
 
-# Temporary files
-*.tmp
-*.temp
-*.bak
+# TypeScript/JavaScript
+*.tsbuildinfo
+*.js.map
+*.jsx.map
+*.ts.map
+*.tsx.map
 
-# Compiled files
-*.exe
-*.dll
-*.so
-*.dylib
-*.class
-*.o
-*.obj
-*.out
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Archives
-*.zip
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.gz
-*.rar
-*.7z
-
-# Cache directories
-.cache/
-.mypy_cache/
-.pytest_cache/
-.gradle/
-target/
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+```
 ```
