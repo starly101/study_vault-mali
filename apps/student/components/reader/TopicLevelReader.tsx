@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, Clock, Star, ChevronDown, ChevronRight, Menu, X, List, ArrowLeft, ArrowRight } from 'lucide-react';
+import { BookOpen, Clock, Star, ChevronDown, ChevronRight, Menu, X, List, ArrowLeft, ArrowRight, BookMarked } from 'lucide-react';
 import { ContentBlockRenderer } from '@/components/reader/ContentBlockRenderer';
 import { TopicPracticeSection } from '@/components/reader/TopicPracticeSection';
 import { TopicBreadcrumb } from '@/components/reader/TopicBreadcrumb';
@@ -214,7 +214,7 @@ export default function TopicLevelReader({
           {topic.key_terms && topic.key_terms.length > 0 && (
             <div className="mt-12">
               <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                <span className="text-rose-600">📚</span> Key Terms
+                <BookMarked className="w-5 h-5 text-rose-600" /> Key Terms
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {topic.key_terms.map((kt: any, idx: number) => (
