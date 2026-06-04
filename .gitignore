@@ -1,11 +1,8 @@
-# Documentation files that were deleted
-DIAGNOSTIC_REPORT.md
-QURAN_SUPPORT.md
-README.md
-UX_TRANSFORMATION_PHASE_1-3.md
-docs/component-inventory.md
-docs/component-migration-matrix.md
-docs/dependency-graph.md
-docs/emoji-audit.md
-docs/implementation-readiness-report.md
-docs/screen-blueprints.md
+```
+# Documentation and planning files
+COMPONENT_INVENTORY.md
+FEATURE_INVENTORY.md
+PROJECT_AUDIT.md
+ROUTE_MAP.md
+USER_JOURNEYS.md
+```
