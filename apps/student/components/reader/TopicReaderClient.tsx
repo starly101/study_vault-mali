@@ -9,6 +9,7 @@ import { ProgressWheel } from '@/components/progress/ProgressWheel';
 import QuranVerseRenderer from '@/components/QuranVerseRenderer';
 import { PreviewWall } from '@/components/reader/PreviewWall';
 import { topicUrl } from '@/lib/reader-urls';
+import { BookOpen, PenLine, Sparkles, Bookmark, Flame, BookMarked, Target, Check, PenTool, CheckCircle } from 'lucide-react';
 
 interface BoardRef {
   _id?: string;
@@ -182,10 +183,10 @@ export default function TopicReaderClient({
   };
 
   const tabs = [
-    { id: 'read' as const, label: 'Read', icon: '📖' },
-    { id: 'practice' as const, label: 'Practice', icon: '📝' },
-    { id: 'ai' as const, label: 'AI Explain', icon: '🤖' },
-    { id: 'vault' as const, label: 'Vault', icon: '📚' },
+    { id: 'read' as const, label: 'Read', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'practice' as const, label: 'Practice', icon: <PenLine className="w-4 h-4" /> },
+    { id: 'ai' as const, label: 'AI Explain', icon: <Sparkles className="w-4 h-4" /> },
+    { id: 'vault' as const, label: 'Vault', icon: <Bookmark className="w-4 h-4" /> },
   ];
   const blocks = topic.content_blocks || [];
   const visibleCount = isLoggedIn ? blocks.length : Math.ceil(blocks.length / 2);
@@ -215,7 +216,7 @@ export default function TopicReaderClient({
         {/* Hot Topic Badge */}
         {isHotTopic && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 border border-orange-300 rounded-full text-orange-800 text-sm font-medium mb-4">
-            <span>🔥</span>
+            <Flame className="w-4 h-4" />
             <span>FBISE Favorite — appeared {examAppearances} times</span>
           </div>
         )}
@@ -323,7 +324,7 @@ export default function TopicReaderClient({
             {topic.key_terms && topic.key_terms.length > 0 && (
               <div className="mt-12">
                 <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                  <span className="text-rose-600">📚</span> Key Terms
+                  <BookMarked className="w-5 h-5 text-rose-600" /> Key Terms
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {topic.key_terms.map((kt: any, idx: number) => (
@@ -343,7 +344,7 @@ export default function TopicReaderClient({
           <div className="space-y-10 animate-fade-in">
             {(!topic.book_mcqs?.length && !topic.book_problems?.length && !topic.book_short_questions?.length) ? (
               <Card className="p-12 text-center border border-dashed border-slate-200 bg-slate-50">
-                <div className="text-4xl mb-4">📝</div>
+                <PenLine className="w-12 h-12 mx-auto mb-4 text-slate-400" />
                 <h3 className="text-lg font-bold text-slate-700 mb-2">No Practice Material</h3>
                 <p className="text-slate-500">There are no MCQs or problems associated with this specific topic yet.</p>
               </Card>
@@ -353,7 +354,7 @@ export default function TopicReaderClient({
                 {topic.book_mcqs && topic.book_mcqs.length > 0 && (
                   <section>
                     <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                      <span className="text-forest-600">🎯</span> Multiple Choice Questions
+                      <Target className="w-5 h-5 text-forest-600" /> Multiple Choice Questions
                     </h3>
                     <div className="space-y-4">
                       {topic.book_mcqs.map((mcq: any, idx: number) => (
@@ -378,7 +379,7 @@ export default function TopicReaderClient({
                                     >
                                       <div className="flex justify-between items-center gap-2">
                                         <span>{opt}</span>
-                                        {isCorrect && <span>✓</span>}
+                                        {isCorrect && <Check className="w-4 h-4" />}
                                       </div>
                                     </div>
                                   );
@@ -401,7 +402,7 @@ export default function TopicReaderClient({
                 {(topic.book_problems?.length > 0 || topic.book_short_questions?.length > 0) && (
                   <section>
                     <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                      <span className="text-coral-600">✍️</span> Problems & Exercises
+                      <PenTool className="w-5 h-5 text-coral-600" /> Problems & Exercises
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
                       {topic.book_short_questions?.map((q: string, idx: number) => (
@@ -444,7 +445,7 @@ export default function TopicReaderClient({
                 : 'bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700'
             }`}
           >
-            {isCompleted ? '✓ Completed!' : '✓ Mark as Completed'}
+            {isCompleted ? 'Completed!' : 'Mark as Completed'}
           </Button>
           
           {nextTopic ? (
