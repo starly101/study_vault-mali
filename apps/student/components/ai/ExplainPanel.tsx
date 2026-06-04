@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAICredits } from '@/hooks/useAICredits';
+import { Target, Lightbulb } from 'lucide-react';
 
 interface ExplainPanelProps {
   topicId: string;
@@ -96,8 +97,9 @@ export function ExplainPanel({ topicId, userId, topicTitle, rawText }: ExplainPa
 
         {creditsRemaining <= 0 && !explanation && (
           <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
-            <p className="text-sm text-amber-800 dark:text-amber-300 text-center">
-              🎯 Daily limit reached! Upgrade to premium for unlimited AI explanations.
+            <p className="text-sm text-amber-800 dark:text-amber-300 text-center flex items-center justify-center gap-2">
+              <Target className="w-4 h-4" />
+              <span>Daily limit reached! Upgrade to premium for unlimited AI explanations.</span>
             </p>
           </div>
         )}
@@ -178,8 +180,9 @@ export function ExplainPanel({ topicId, userId, topicTitle, rawText }: ExplainPa
             </div>
 
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                💡 Tip: Ask your teacher if you need more examples
+              <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                <Lightbulb className="w-3 h-3" />
+                <span>Tip: Ask your teacher if you need more examples</span>
               </p>
               <button
                 onClick={() => {
