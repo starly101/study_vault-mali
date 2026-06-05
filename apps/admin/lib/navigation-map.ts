@@ -1,12 +1,14 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  BookOpen, 
-  FileText, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  BookOpen,
+  FileText,
+  Settings,
   BarChart3,
   Brain,
-  Shield
+  Shield,
+  Upload,
+  Library
 } from 'lucide-react';
 
 export type NavItem = {
@@ -14,10 +16,11 @@ export type NavItem = {
   path: string;
   icon: React.ComponentType<{ className?: string }>;
   roles: string[];
-  category: 'main' | 'content' | 'users' | 'settings';
+  category: 'main' | 'content' | 'users' | 'settings' | 'ingestion';
 };
 
 export const navigationMap: NavItem[] = [
+  // Main Dashboard
   {
     title: 'Dashboard',
     path: '/admin',
@@ -32,24 +35,12 @@ export const navigationMap: NavItem[] = [
     roles: ['admin'],
     category: 'main'
   },
-  {
-    title: 'Users',
-    path: '/admin/users',
-    icon: Users,
-    roles: ['admin'],
-    category: 'users'
-  },
-  {
-    title: 'Courses',
-    path: '/admin/courses',
-    icon: BookOpen,
-    roles: ['admin'],
-    category: 'content'
-  },
+  
+  // Content Management
   {
     title: 'Books',
     path: '/admin/books',
-    icon: FileText,
+    icon: Library,
     roles: ['admin'],
     category: 'content'
   },
@@ -68,11 +59,29 @@ export const navigationMap: NavItem[] = [
     category: 'content'
   },
   {
-    title: 'AI Ingestion',
-    path: '/admin/ai-ingestion',
-    icon: Brain,
+    title: 'Courses',
+    path: '/admin/courses',
+    icon: BookOpen,
     roles: ['admin'],
     category: 'content'
+  },
+  
+  // AI Ingestion
+  {
+    title: 'AI Ingestion',
+    path: '/admin/books/ingest',
+    icon: Upload,
+    roles: ['admin'],
+    category: 'ingestion'
+  },
+  
+  // User Management
+  {
+    title: 'Users',
+    path: '/admin/users',
+    icon: Users,
+    roles: ['admin'],
+    category: 'users'
   },
   {
     title: 'Roles & Permissions',
@@ -81,6 +90,8 @@ export const navigationMap: NavItem[] = [
     roles: ['admin'],
     category: 'users'
   },
+  
+  // Settings
   {
     title: 'Settings',
     path: '/admin/settings',

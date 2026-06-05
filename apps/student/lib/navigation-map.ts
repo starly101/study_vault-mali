@@ -1,14 +1,16 @@
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  Brain, 
-  Vault, 
-  Trophy, 
-  Settings, 
+import {
+  LayoutDashboard,
+  BookOpen,
+  Brain,
+  Vault,
+  Trophy,
+  Settings,
   CreditCard,
   GraduationCap,
   Library,
-  User
+  User,
+  Sparkles,
+  Users
 } from 'lucide-react';
 
 export type NavItem = {
@@ -16,7 +18,7 @@ export type NavItem = {
   path: string;
   icon: React.ComponentType<{ className?: string }>;
   roles: string[];
-  category: 'main' | 'learning' | 'account';
+  category: 'main' | 'learning' | 'account' | 'premium';
 };
 
 export const navigationMap: NavItem[] = [
@@ -25,10 +27,10 @@ export const navigationMap: NavItem[] = [
     title: 'Dashboard',
     path: '/dashboard',
     icon: LayoutDashboard,
-    roles: ['student', 'admin'],
+    roles: ['student'],
     category: 'main'
   },
-  
+
   // Learning Path
   {
     title: 'My Learning',
@@ -51,7 +53,7 @@ export const navigationMap: NavItem[] = [
     roles: ['student'],
     category: 'learning'
   },
-  
+
   // Quiz & Practice
   {
     title: 'Quiz Engine',
@@ -60,7 +62,14 @@ export const navigationMap: NavItem[] = [
     roles: ['student'],
     category: 'learning'
   },
-  
+  {
+    title: 'AI Flashcards',
+    path: '/flashcards',
+    icon: Sparkles,
+    roles: ['student'],
+    category: 'learning'
+  },
+
   // Knowledge Vault
   {
     title: 'Knowledge Vault',
@@ -69,7 +78,14 @@ export const navigationMap: NavItem[] = [
     roles: ['student'],
     category: 'learning'
   },
-  
+  {
+    title: 'My Vault',
+    path: '/my-vault',
+    icon: Vault,
+    roles: ['student'],
+    category: 'learning'
+  },
+
   // Progress & Achievements
   {
     title: 'Progress',
@@ -78,7 +94,7 @@ export const navigationMap: NavItem[] = [
     roles: ['student'],
     category: 'account'
   },
-  
+
   // Billing & Subscription
   {
     title: 'Billing',
@@ -87,7 +103,23 @@ export const navigationMap: NavItem[] = [
     roles: ['student'],
     category: 'account'
   },
-  
+  {
+    title: 'Premium',
+    path: '/premium',
+    icon: Sparkles,
+    roles: ['student'],
+    category: 'premium'
+  },
+
+  // Parent Portal
+  {
+    title: 'Parent Portal',
+    path: '/parents',
+    icon: Users,
+    roles: ['student', 'parent'],
+    category: 'account'
+  },
+
   // Profile & Settings
   {
     title: 'Profile',
