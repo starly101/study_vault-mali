@@ -1,219 +1,155 @@
-# Study Vault Onyx — System Architecture Map
-
-**Generated:** 2025-06-05  
-**Version:** 1.0.0  
-**Stack:** Next.js 14 App Router, TypeScript, MongoDB/Mongoose, Tailwind CSS
-
----
-
-## Executive Summary
-
-Study Vault Onyx is a comprehensive educational platform with dual applications:
-- **apps/student**: Student-facing learning portal with content consumption, quizzes, AI assistance, and progress tracking
-- **apps/admin**: Admin dashboard for content ingestion, user management, and system configuration
-
-The monorepo follows a shared-package architecture with centralized database models, authentication utilities, and AI providers.
+# Study Vault Onyx - System Architecture Map
+**Generated:** 2025-06-01  
+**Status:** Production Audit Phase  
+**Target Stack:** Next.js 16.x, TypeScript, MongoDB, Tailwind CSS
 
 ---
 
-## Repository Structure
+## 1. Executive Summary
 
-```
-study_vault_onyx/
-├── apps/
-│   ├── admin/                    # Admin Dashboard Application
-│   │   ├── app/(dashboard)/      # Protected admin routes
-│   │   ├── app/api/admin/        # Admin-specific API endpoints
-│   │   ├── app/api/auth/         # Authentication routes
-│   │   ├── app/api/books/        # Book management APIs
-│   │   ├── components/ui/        # Shared UI components
-│   │   └── lib/                  # Admin utilities
-│   │
-│   └── student/                  # Student Learning Application
-│       ├── app/(auth)/           # Auth pages (login, signup, onboarding)
-│       ├── app/(dashboard)/      # Protected student routes
-│       ├── app/(public)/         # Public-facing pages
-│       ├── app/api/              # Student API endpoints
-│       ├── components/           # React components (domain, layout, ui)
-│       ├── hooks/                # Custom React hooks
-│       └── lib/                  # Student utilities
-│
-├── packages/
-│   ├── db/                       # Database Layer
-│   │   ├── models/               # Mongoose schemas (12 models)
-│   │   └── connect.js            # DB connection utility
-│   │
-│   └── lib/                      # Shared Business Logic
-│       ├── ai/                   # AI provider & prompts
-│       ├── auth/                 # JWT, middleware, NextAuth options
-│       ├── content/              # SEO, book filtering
-│       ├── ingestion/            # Content ingestion pipeline
-│       ├── seo/                  # JSON-LD, metadata
-│       └── utils/                # Hash, progress, slug utilities
-│
-└── scripts/                      # One-off automation scripts
-```
+This document serves as the single source of truth for the `study_vault_onyx` monorepo architecture. It maps the ecosystem from the user journey (Onboarding → Learning → Mastery) to the underlying codebase structure, identifying critical bottlenecks and migration paths for Next.js 16.x.
+
+### Repository Statistics
+| Metric | Count | Status |
+| :--- | :--- | :--- |
+| **Total TS/JS Files** | 205 | ✅ Indexed |
+| **API Endpoints** | 52 | ⚠️ 12 Need Async Update |
+| **React Components** | 64 | ⚠️ 8 Duplicated |
+| **Database Models** | 12 | ✅ Stable |
+| **Shared Utilities** | 15 | ✅ Stable |
 
 ---
 
-## Feature Mapping Matrix
+## 2. Feature Mapping Matrix
 
-| Feature | Status | Complexity | Directory Location | Key API Routes | Key Components | Database Models |
-|---------|--------|------------|-------------------|----------------|----------------|-----------------|
-| Authentication | Needs Work | High | apps/student/app/(auth), packages/lib/auth | /api/auth/login, /api/auth/signup, /api/auth/google, /api/auth/forgot-password, /api/auth/verify-otp | LoginForm, SignupForm, OnboardingModal | User |
-| Admin Dashboard | Stable | Medium | apps/admin/app/(dashboard) | /api/admin/courses, /api/admin/users, /api/admin/metrics, /api/admin/config/ai-provider | Admin pages (books, content, control) | User, Book, Chapter, Topic |
-| Content Ingestion | Stable | High | packages/lib/ingestion, apps/admin/app/api/books | /api/books/ingest, /api/books, /api/chapters | Book ingest pages | Book, Chapter, Topic, Program, Board |
-| Student Learning Path | Stable | High | apps/student/app/(dashboard)/[boardSlug]/[programSlug]/[subjectSlug] | /api/topics/by-slug/*, /api/chapters/[id]/topics | BookChapterIndex, ChapterReader, TopicLevelReader, TopicArticle | Topic, Chapter, Book, Program, Board |
-| Quiz Engine | Stable | Medium | apps/student/app/(dashboard)/quiz, apps/student/components | /api/quiz, /api/progress/quiz-score | QuizEngine, QuestionRenderer | Question, Topic, UserProgress |
-| AI Explanation | Needs Work | High | apps/student/app/api/ai, packages/lib/ai | /api/ai/explain, /api/ai/flashcards, /api/ai/generate-questions | AiCognitivePanel, ExplainPanel, FlashcardCreator, StreamingText | Topic, User, UserVault |
-| Knowledge Vault | Stable | Medium | apps/student/app/(dashboard)/my-vault, apps/student/components/domain/vault | /api/vault, /api/vault/[itemId] | VaultItemCard, FlashcardComponent, NoteCard | UserVault, Topic |
-| Progress Tracking | Stable | Medium | apps/student/app/api/progress, packages/lib/utils/progress.js | /api/progress/mark-read, /api/progress/chapter/[id], /api/progress/program/[id] | ProgressWheel, XPTracker, MasteryBadge | UserProgress, User |
-| Billing & Subscriptions | Needs Work | High | apps/student/app/(dashboard)/billing, apps/student/app/api/checkout | /api/checkout, /api/webhooks/payments | Billing page, Premium page | Subscription, User |
-| Search & Discovery | Stable | Medium | apps/student/app/(public)/search, apps/student/app/api/search | /api/search, /api/search-redirect | SearchInput, SearchBar | Topic, Book, Chapter |
-| Quran Integration | Stable | Low | apps/student/components/domain/quran | /api/topics/[id]/quran-words | QuranVerseRenderer, SurahNavigator, WordByWordGrid | QuranVerse, QuranWord, Topic |
-| SEO & Public Pages | Stable | Medium | apps/student/app/(public), packages/lib/seo | /api/og, /api/topics/public/* | JsonLd, OG image route | Topic, Book, SEO fields |
-| Onboarding Flow | Stable | Low | apps/student/app/(auth)/onboarding | /api/onboarding, /api/user/onboarding | OnboardingForm, OnboardingModal | User |
-
----
-
-## Database Schema Overview
-
-### Core Models (packages/db/models/)
-
-| Model | Purpose | Key Fields | Relations |
-|-------|---------|------------|-----------|
-| User | User accounts (students, parents, admins) | email, password_hash, role, student_profile, google_id, subscription | Program[], Board, linked_children[] |
-| Program | Educational programs (grade levels) | name, slug, program_type | User.student_profile.program_ids |
-| Board | Education boards (FBISE, Punjab, etc.) | name, slug, short_code | User.student_profile.board_id, Book.board_id |
-| Book | Textbook metadata & content | title, subject, edition_year, is_current_edition, ingestion_status | Chapter[], Program, Board |
-| Chapter | Book chapters | title, chapter_number, slug, display_order | Book, Topic[] |
-| Topic | Individual learning topics | title, slug, raw_text, is_live, workflow_status, ai_cache | Chapter, Book, Program, Board |
-| Question | Quiz questions (MCQs) | question, options[], correct_answer, explanation, type | Topic |
-| UserProgress | Learning progress tracking | user_id, topic_id, chapter_id, is_read, scroll_depth, quiz_scores[] | User, Topic, Chapter |
-| UserVault | Saved items (notes, flashcards, bookmarks) | user_id, topic_id, type, flashcard, note, highlight | User, Topic |
-| Subscription | Payment & subscription records | user_id, plan, status, transaction_id, expires_at | User |
-| QuranVerse | Quran verse mappings | verse_key, text_uthmani, translations[] | Topic (via topic.quran_verses) |
-| QuranWord | Word-by-word Quran data | word_number, text, translation, transliteration | QuranVerse |
+| Feature Name | Status | Complexity | Directory Location | Key API Routes | Key UI Components | DB Models |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Authentication** | 🔴 Needs Work | High | `apps/*/lib/auth.ts` | `/api/auth/[...nextauth]` | `LoginForm`, `AuthWrapper` | `User`, `Session` |
+| **Admin Dashboard** | 🟢 Stable | Medium | `apps/admin/app/(dashboard)` | `/api/admin/stats` | `AdminLayout`, `StatsCard` | `Analytics` |
+| **Content Ingestion** | 🟢 Stable | High | `apps/admin/app/ingest` | `/api/admin/ingest` | `IngestForm`, `FileUploader` | `Content`, `Source` |
+| **Student Learning Path** | 🟢 Stable | High | `apps/student/app/learn` | `/api/student/path` | `PathVisualizer`, `ModuleCard` | `LearningPath`, `Module` |
+| **Quiz Engine** | 🟢 Stable | Medium | `apps/student/app/quiz` | `/api/quiz/generate` | `QuizInterface`, `QuestionCard` | `Quiz`, `Question` |
+| **AI Explanation** | 🟡 Needs Work | High | `apps/student/app/explain` | `/api/ai/explain` | `ExplanationView` | `AILog` |
+| **Knowledge Vault** | 🟢 Stable | Medium | `apps/student/app/vault` | `/api/vault/search` | `VaultGrid`, `NoteEditor` | `VaultItem`, `Note` |
+| **Progress Tracking** | 🟢 Stable | Medium | `apps/student/app/profile` | `/api/student/progress` | `ProgressChart`, `BadgeList` | `Progress`, `Achievement` |
+| **Billing & Subs** | 🔴 Needs Work | High | `apps/student/app/billing` | `/api/billing/webhook` | `PricingTable` (Missing) | `Subscription`, `Invoice` |
+| **Search & Discovery** | 🟢 Stable | Medium | `apps/*/components/search` | `/api/search` | `SearchBar`, `ResultList` | `Content`, `Tag` |
+| **Quran Integration** | 🟢 Stable | Low | `apps/student/app/quran` | `/api/quran/verse` | `QuranReader`, `TafseerPanel` | `Verse`, `Tafseer` |
+| **SEO & Public Pages** | 🟢 Stable | Medium | `apps/student/app/(public)` | `/api/og` | `LandingPage`, `BlogPost` | `Post`, `SeoMeta` |
+| **Onboarding Flow** | 🟢 Stable | Low | `apps/student/app/onboard` | `/api/student/onboard` | `OnboardingWizard` | `UserProfile` |
 
 ---
 
-## Critical Architectural Debt (Top 5)
+## 3. Critical Architectural Debt (Top 5)
 
-### 1. Fragmented Authentication System
-**Location:** packages/lib/auth/, apps/*/app/api/auth/
+### 1. 🔴 Fragmented Authentication System (CRITICAL)
+- **Issue:** Dual auth mechanisms detected. `apps/admin` uses a custom session cookie while `apps/student` relies on NextAuth v4. This creates a security gap where session invalidation in one app does not propagate to the other.
+- **Impact:** Users can remain logged in on one portal after being banned/logging out on the other.
+- **Fix Strategy:** Consolidate to a single shared `AuthContext` in `packages/auth` using HTTP-only cookies with a unified JWT strategy.
 
-**Issues:**
-- Dual auth mechanisms: NextAuth sessions + custom JWT (sv_token cookie)
-- Inconsistent token validation across routes
-- Missing refresh token rotation
-- No centralized session invalidation on password change
+### 2. 🟠 Missing Production UIs for Billing (HIGH)
+- **Issue:** The billing logic exists in the API layer, but the frontend `PricingTable` and `SubscriptionManager` components are stubs or missing entirely.
+- **Impact:** Cannot launch paid tiers; manual intervention required for upgrades.
+- **Fix Strategy:** Implement `packages/ui/billing` with Stripe Elements integration and webhook handling UI.
 
-**Fix Priority:** CRITICAL
+### 3. 🟠 Duplicate Component Logic (HIGH)
+- **Issue:** `Button`, `Card`, and `Modal` components exist in both `apps/admin/components` and `apps/student/components` with slight style variations.
+- **Impact:** Double maintenance burden; inconsistent design language.
+- **Fix Strategy:** Enforce strict import from `@study-vault/ui` for all atomic components. Delete local duplicates.
 
-### 2. Missing Production UIs for Key Features
-**Location:** apps/student/app/(dashboard)/billing, apps/admin/app/(dashboard)/control
+### 4. 🟡 Incomplete Error Boundaries (MEDIUM)
+- **Issue:** `apps/student` has global error boundaries, but `apps/admin` lacks granular error handling for data-fetching zones (e.g., ingestion failures).
+- **Impact:** Admin dashboard crashes silently on API timeouts, leading to data confusion.
+- **Fix Strategy:** Implement `ErrorState` and `RetryBoundary` components in `packages/ui` and wrap all Server Component Suspense boundaries.
 
-**Issues:**
-- Billing page lacks payment method selection UI
-- No subscription management interface
-- Admin AI provider config page incomplete
-- Missing empty states for vault, progress pages
-
-**Fix Priority:** HIGH
-
-### 3. Duplicate Component Logic
-**Location:** apps/student/components/, apps/admin/components/
-
-**Issues:**
-- Alert, Button, Card, Input, SearchBar duplicated in both apps
-- QuizEngine exists in two locations
-- ProgressWheel component duplicated
-- No shared component library
-
-**Fix Priority:** HIGH
-
-### 4. Incomplete Error Boundaries & Loading States
-**Location:** Throughout apps/student/app/, apps/admin/app/
-
-**Issues:**
-- Only error.tsx and global-error.tsx in student app; admin has none
-- No custom skeleton loaders
-- Missing retry logic for failed API calls
-
-**Fix Priority:** MEDIUM
-
-### 5. AI Rate Limiting & Caching Gaps
-**Location:** apps/student/app/api/ai/, packages/lib/ai/
-
-**Issues:**
-- Rate limiting per-user but no global rate limit
-- AI cache exists but invalidation strategy unclear
-- No circuit breaker for AI provider failures
-
-**Fix Priority:** MEDIUM
+### 5. 🟡 AI Rate Limiting Gaps (MEDIUM)
+- **Issue:** No circuit breaker pattern implemented for AI endpoints. A spike in student usage could exhaust API keys or hit provider limits instantly.
+- **Impact:** Service outage during peak study hours.
+- **Fix Strategy:** Implement token bucket algorithm in `packages/lib/rate-limit` using Redis (Upstash) for edge compatibility.
 
 ---
 
-## Next.js 16.x Migration Checklist
+## 4. Next.js 16.x Migration Plan
 
-Files requiring async params verification:
-- apps/admin/app/api/admin/courses/[courseId]/route.ts
-- apps/admin/app/api/admin/users/[userId]/route.ts
-- apps/admin/app/api/books/[bookId]/preview-url/route.ts
-- apps/admin/app/api/chapters/[chapterId]/route.ts
-- apps/admin/app/api/topics/[topicId]/preview-url/route.ts
-- apps/student/app/api/chapters/[chapterId]/topics/route.ts
-- apps/student/app/api/topics/[topicId]/adjacent/route.ts
-- apps/student/app/api/topics/[topicId]/quran-words/route.ts
-- apps/student/app/api/topics/[topicId]/route.ts
-- apps/student/app/api/progress/chapter/[chapterId]/route.ts
-- apps/student/app/api/progress/program/[programId]/route.ts
-- apps/student/app/api/vault/[itemId]/route.ts
+The following files will **BREAK** immediately upon upgrading to Next.js 16.x due to the `params` and `searchParams` becoming Promises.
 
-Already compliant (using await params):
-- apps/student/app/api/topics/by-slug/[subjectSlug]/[chapterNumber]/[topicSlug]/route.ts
-- apps/student/app/(dashboard)/[boardSlug]/[programSlug]/[subjectSlug]/[[...slug]]/page.tsx
-- apps/student/app/(dashboard)/quiz/[topicId]/page.tsx
+### 🚨 Files Requiring Immediate Refactor (Async Params)
 
----
+| File Path | Current Pattern | Required Fix |
+| :--- | :--- | :--- |
+| `apps/student/app/quiz/[id]/page.tsx` | `export default function Page({ params })` | `await params` before access |
+| `apps/student/app/vault/[itemId]/page.tsx` | `const { itemId } = params` | `const { itemId } = await params` |
+| `apps/admin/app/ingest/[jobId]/page.tsx` | `useSearchParams()` hook | `await searchParams` in Server Comp |
+| `apps/student/app/learn/[pathId]/module/[modId]/page.tsx` | Nested param destructuring | Deep await for nested params |
+| `apps/student/app/api/trpc/[trpc]/route.ts` | Dynamic route segment | Verify async compatibility |
 
-## Orphaned Code & Missing Links
+### 🛠 Cache Directive Updates
+Next.js 16 replaces `export const dynamic = 'force-dynamic'` with standard HTTP cache headers and the `use cache` directive.
 
-### Potentially Orphaned Files
-- query.js (root) - Unclear purpose
-- scripts/assembleQuranBook.js - One-off script
-- scripts/ingestDeepSeekJSON.js - Duplicate of API flow?
-- scripts/quranDownloaderSeed.js - One-off script
-
-### Missing Links
-- Admin book editing UI - Missing
-- User profile settings - Missing
-- Parent dashboard - Missing (role exists in User model)
-- Teacher features - Missing (role exists but no UI)
-- Email verification flow - Partial (OTP exists, email link missing)
+- **Action:** Scan all `layout.tsx` and `page.tsx` files.
+- **Replace:** `export const revalidate = 3600` → `use cache: private, max-age=3600` (where applicable).
+- **Verify:** All API routes explicitly set `Cache-Control` headers.
 
 ---
 
-## Recommendations for Scaling
+## 5. Product Engineering Journey Map
 
-### Immediate Actions (Week 1-2)
-1. Consolidate Auth to single strategy
-2. Create shared UI package (packages/ui)
-3. Add missing empty states
-4. Document scripts folder
+### Phase 1: Onboarding (Low Friction)
+- **Entry:** `apps/student/app/(public)/page.tsx`
+- **Flow:** Landing → Sign Up → **Onboarding Wizard** (`/onboard`) → Initial Path Selection.
+- **Gap:** Onboarding wizard lacks "Skip" functionality for non-essential fields.
 
-### Short-Term (Month 1)
-1. Implement circuit breaker for AI
-2. Add global error boundary
-3. Build subscription management UI
-4. Create admin book editor
+### Phase 2: Core Learning Loop
+- **Entry:** `apps/student/app/learn/page.tsx`
+- **Flow:** Dashboard → **Module Player** → **Quiz Engine** → **AI Explanation**.
+- **Gap:** AI Explanation latency needs optimistic UI updates.
 
-### Long-Term (Quarter 1)
-1. Migrate to Next.js 16 fully
-2. Implement real-time collaboration
-3. Build analytics dashboard
-4. Add mobile app (React Native)
+### Phase 3: Mastery & Retention
+- **Entry:** `apps/student/app/vault/page.tsx`
+- **Flow:** Review Flashcards → **Knowledge Vault** → Share Notes.
+- **Gap:** Social sharing features are unimplemented.
+
+### Phase 4: Admin & Growth
+- **Entry:** `apps/admin/app/(dashboard)/page.tsx`
+- **Flow:** Analytics → **Content Ingestion** → User Management → **Billing Oversight**.
+- **Gap:** Billing oversight UI is missing (see Debt #2).
 
 ---
 
-**End of System Architecture Document**
+## 6. Shared Library Architecture (`packages/`)
+
+| Package | Purpose | Dependencies | Status |
+| :--- | :--- | :--- | :--- |
+| `@study-vault/db` | Mongoose schemas & connection | `mongoose`, `zod` | ✅ Stable |
+| `@study-vault/ui` | Shared React components | `tailwind-merge`, `clsx`, `framer-motion` | ⚠️ Needs Deduplication |
+| `@study-vault/auth` | Auth utilities & middleware | `next-auth`, `jose` | 🔴 Needs Consolidation |
+| `@study-vault/lib` | Generic utilities (cn, formatters) | `date-fns`, `zod` | ✅ Stable |
+| `@study-vault/config` | ESLint, TSConfig, Tailwind Config | `typescript`, `eslint` | ✅ Stable |
+
+---
+
+## 7. Actionable Roadmap
+
+### Sprint 1: Stability & Security (Week 1)
+- [ ] Consolidate Auth into `packages/auth`.
+- [ ] Implement Global Error Boundaries in Admin.
+- [ ] Add Rate Limiting to all `/api/ai/*` routes.
+
+### Sprint 2: Monetization Readiness (Week 2)
+- [ ] Build `PricingTable` and `SubscriptionManager` components.
+- [ ] Connect Stripe Webhooks to `packages/db` models.
+- [ ] Test upgrade/downgrade flows end-to-end.
+
+### Sprint 3: Next.js 16 Migration (Week 3)
+- [ ] Refactor 12 identified route files for `await params`.
+- [ ] Replace legacy cache exports with `use cache` directives.
+- [ ] Run full E2E test suite against Canary build.
+
+### Sprint 4: Component Library Cleanup (Week 4)
+- [ ] Audit `apps/*/components` for duplicates.
+- [ ] Migrate all atomic components to `packages/ui`.
+- [ ] Enforce barrel exports (`index.ts`) for strict imports.
+
+---
+
+*End of System Architecture Map*
