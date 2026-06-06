@@ -7,6 +7,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ item
   try {
     const { itemId } = await params;
     const user = await requireAuth(req);
+    if (!user) {
+      return Response.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const updates = await req.json();
     await connectDB();
 
@@ -28,6 +32,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { itemId } = await params;
     const user = await requireAuth(req);
+    if (!user) {
+      return Response.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     await connectDB();
 
     const item = await UserVault.findOneAndDelete({ _id: itemId, user_id: user._id });

@@ -8,6 +8,10 @@ import '@studyvault/db/models/Topic';
 export async function GET(req: NextRequest) {
   try {
     const user = await requireAuth(req);
+    if (!user) {
+      return Response.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const topicId = searchParams.get('topicId');
     const type = searchParams.get('type');
@@ -35,6 +39,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireAuth(req);
+    if (!user) {
+      return Response.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { topicId, type, flashcard, video, highlight, note, chapterId, programId } = body;
 
