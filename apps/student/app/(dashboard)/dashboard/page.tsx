@@ -1,71 +1,157 @@
-'use client';
+import { Suspense } from "react";
+import { AppShell } from "@/components/layout/AppShell";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { StatCard, ContinueStudyingCard, StreakCard, HotTopicsCard, VaultSnapshotCard } from "@/components/dashboard/DashboardComponents";
+import { Zap, BookOpen, Trophy, Flame, Archive, TrendingUp, ChevronRight } from "lucide-react";
 
-import { useEffect, useState } from 'react';
-import useSWR from 'swr';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { AppShell } from '@/components/layout/AppShell';
-import { PageContainer } from '@/components/layout/PageContainer';
-import { BookCard } from '@/components/domain/BookCard';
-import { XPTracker } from '@/components/domain/XPTracker';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { BookOpen, Clock, Trophy, ArrowRight, Star } from 'lucide-react';
+// Types
+interface DashboardStats {
+  examReadiness: number;
+  topicsMastered: number;
+  xpThisWeek: number;
+  currentLevel: number;
+  xpToNextLevel: number;
+  streakDays: number;
+  topicsStudied: number;
+  studiedDays: boolean[];
+}
+
+interface ChapterProgress {
+  _id: string;
+  bookTitle: string;
+  chapterTitle: string;
+  progress: number;
+  href: string;
+}
 
 interface Book {
   _id: string;
   title: string;
   subject: string;
-  subject_slug: string;
+  subject_icon?: string;
   program_name: string;
   board: string;
-  edition_year: number;
-  total_chapters: number;
   total_topics: number;
-  is_live: boolean;
-  metadata?: { grade_level?: string; authors?: string[] };
+  topicsRead?: number;
+}
+
+interface HotTopic {
+  _id: string;
+  title: string;
+  exam_frequency_count: number;
+  slug: string;
+}
+
+interface VaultItem {
+  _id: string;
+  topicTitle: string;
+  itemType: "flashcard" | "bookmark" | "note";
+  createdAt: string;
+}
+
+interface QuizAttempt {
+  _id: string;
+  topicTitle: string;
+  score: number;
+  status: "mastered" | "retry" | "in-progress";
+  date: string;
 }
 
 interface DashboardData {
+  stats: DashboardStats;
+  recentChapters: ChapterProgress[];
   books: Book[];
-  recentProgress: any[];
-  totalXP: number;
-  masteredCount: number;
+  hotTopics: HotTopic[];
+  vaultItems: VaultItem[];
+  recentQuizzes: QuizAttempt[];
+  firstName: string;
 }
 
-// Mobile-first skeleton loader using design tokens
-function DashboardSkeleton() {
+// Skeleton loaders
+function StatsStripSkeleton() {
   return (
-    <div className="space-y-6">
-      {/* XP Tracker Skeleton */}
-      <div className="bg-bg-secondary border border-border rounded-xl p-6">
-        <div className="h-8 bg-skeleton rounded-lg w-1/3 mb-4" />
-        <div className="h-4 bg-skeleton rounded w-full mb-2" />
-        <div className="h-4 bg-skeleton rounded w-2/3" />
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="bg-white border border-slate-100 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-slate-200 rounded-lg animate-pulse" />
+            <div className="flex-1">
+              <div className="h-8 bg-slate-200 rounded w-16 mb-2 animate-pulse" />
+              <div className="h-3 bg-slate-200 rounded w-20 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ContinueStudyingSkeleton() {
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl p-6">
+      <div className="h-6 bg-slate-200 rounded w-48 mb-4 animate-pulse" />
+      <div className="space-y-4">
+        {[1, 2].map((i) => (
+          <div key={i} className="border border-slate-100 rounded-xl p-4">
+            <div className="h-4 bg-slate-200 rounded w-32 mb-2 animate-pulse" />
+            <div className="h-5 bg-slate-200 rounded w-48 mb-3 animate-pulse" />
+            <div className="h-2 bg-slate-200 rounded w-full animate-pulse" />
+          </div>
+        ))}
       </div>
-      
-      {/* Books Grid Skeleton */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="bg-bg-secondary border border-border rounded-xl p-6 h-64">
-            <div className="w-12 h-12 bg-skeleton rounded-xl mb-4" />
-            <div className="h-6 bg-skeleton rounded w-3/4 mb-3" />
-            <div className="h-4 bg-skeleton rounded w-1/2 mb-6" />
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 bg-skeleton rounded-full" />
-                <div className="h-3 bg-skeleton rounded flex-1" />
-              </div>
-              <div className="flex items-center gap-3 pl-4">
-                <div className="w-3 h-3 bg-skeleton rounded-full" />
-                <div className="h-2 bg-skeleton rounded flex-1" />
-              </div>
-              <div className="flex items-center gap-3 pl-4">
-                <div className="w-3 h-3 bg-skeleton rounded-full" />
-                <div className="h-2 bg-skeleton rounded flex-1" />
-              </div>
+    </div>
+  );
+}
+
+function StreakCardSkeleton() {
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl p-6">
+      <div className="h-6 bg-slate-200 rounded w-32 mb-4 animate-pulse" />
+      <div className="h-3 bg-slate-200 rounded w-full mb-2 animate-pulse" />
+      <div className="h-3 bg-slate-200 rounded w-24 mb-4 animate-pulse" />
+      <div className="h-5 bg-slate-200 rounded w-36 mb-3 animate-pulse" />
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+          <div key={i} className="w-6 h-6 bg-slate-200 rounded-full animate-pulse" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BooksRowSkeleton() {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="h-6 bg-slate-200 rounded w-32 animate-pulse" />
+        <div className="h-4 bg-slate-200 rounded w-20 animate-pulse" />
+      </div>
+      <div className="flex gap-4 overflow-hidden">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="w-40 flex-shrink-0 bg-white border border-slate-100 rounded-xl p-4">
+            <div className="w-10 h-10 bg-slate-200 rounded-lg mb-3 animate-pulse" />
+            <div className="h-4 bg-slate-200 rounded w-full mb-2 animate-pulse" />
+            <div className="h-3 bg-slate-200 rounded w-24 mb-4 animate-pulse" />
+            <div className="h-2 bg-slate-200 rounded w-full animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HotTopicsSkeleton() {
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl p-6">
+      <div className="h-6 bg-slate-200 rounded w-40 mb-4 animate-pulse" />
+      <div className="space-y-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex items-center gap-3 py-2">
+            <div className="w-4 h-4 bg-slate-200 rounded animate-pulse" />
+            <div className="flex-1">
+              <div className="h-4 bg-slate-200 rounded w-32 mb-1 animate-pulse" />
+              <div className="h-3 bg-slate-200 rounded w-24 animate-pulse" />
             </div>
           </div>
         ))}
@@ -74,212 +160,373 @@ function DashboardSkeleton() {
   );
 }
 
-// Light mode empty state with SVG icons
-function EmptyState() {
+function VaultSkeleton() {
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-6">
-      <div className="mb-8">
-        <svg width="120" height="120" viewBox="0 0 120 120" className="text-text-muted">
-          <rect x="30" y="40" width="60" height="50" rx="8" fill="currentColor" opacity="0.1" />
-          <path d="M30 40 L60 25 L90 40" stroke="currentColor" strokeWidth="3" fill="none" />
-          <line x1="45" y1="55" x2="75" y2="55" stroke="currentColor" strokeWidth="2" />
-          <line x1="45" y1="65" x2="75" y2="65" stroke="currentColor" strokeWidth="2" />
-          <line x1="45" y1="75" x2="65" y2="75" stroke="currentColor" strokeWidth="2" />
-        </svg>
+    <div className="bg-white border border-slate-100 rounded-2xl p-6">
+      <div className="h-6 bg-slate-200 rounded w-28 mb-4 animate-pulse" />
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="py-2">
+            <div className="h-4 bg-slate-200 rounded w-40 mb-2 animate-pulse" />
+            <div className="h-5 bg-slate-200 rounded w-20 animate-pulse" />
+          </div>
+        ))}
       </div>
-      <h2 className="text-2xl font-bold text-text-primary mb-3 text-center">Your Study Vault is Empty</h2>
-      <p className="text-text-secondary text-center max-w-md mb-8">
-        Start your learning journey by exploring our collection of board-approved textbooks and resources.
-      </p>
-      <Link href="/books">
-        <Button variant="primary" size="lg" icon={<BookOpen size={20} />}>
-          Explore Books
-        </Button>
-      </Link>
     </div>
   );
 }
 
-// Error state with proper token usage
-function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) {
-  const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 3;
-  
-  const handleRetry = () => {
-    if (retryCount < maxRetries) {
-      setRetryCount(prev => prev + 1);
-      onRetry();
-    }
-  };
-
+function QuizActivitySkeleton() {
   return (
-    <Card variant="outlined" className="border-l-4 border-error bg-bg-secondary">
-      <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 text-error">
-          <svg width="40" height="40" viewBox="0 0 40 40">
-            <circle cx="20" cy="20" r="18" fill="currentColor" opacity="0.1" />
-            <path d="M20 10 L20 22 M20 28 L20 30" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-            <circle cx="20" cy="34" r="2" fill="currentColor" />
-          </svg>
-        </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-text-primary mb-2">Unable to Load Dashboard</h3>
-          <p className="text-text-secondary text-sm mb-4">{error || 'An unexpected error occurred.'}</p>
-          {retryCount < maxRetries && (
-            <p className="text-xs text-text-muted mb-4">Auto-retrying... (Attempt {retryCount + 1} of {maxRetries})</p>
-          )}
-          <div className="flex gap-3">
-            <Button 
-              variant="primary" 
-              onClick={handleRetry} 
-              disabled={retryCount >= maxRetries}
-            >
-              {retryCount >= maxRetries ? 'Max Retries Reached' : 'Retry Now'}
-            </Button>
-            <Link href="/">
-              <Button variant="outline">Go Home</Button>
-            </Link>
+    <div className="bg-white border border-slate-100 rounded-2xl p-6">
+      <div className="h-6 bg-slate-200 rounded w-36 mb-4 animate-pulse" />
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-4 py-2">
+            <div className="h-4 bg-slate-200 rounded w-32 animate-pulse" />
+            <div className="h-4 bg-slate-200 rounded w-12 animate-pulse" />
+            <div className="h-4 bg-slate-200 rounded w-20 animate-pulse" />
+            <div className="h-4 bg-slate-200 rounded w-16 ml-auto animate-pulse" />
           </div>
-        </div>
+        ))}
       </div>
-    </Card>
+    </div>
   );
 }
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const { data, error, mutate } = useSWR<DashboardData>('/api/dashboard', async (url) => {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch dashboard');
-    return res.json();
-  });
+// Data fetching functions (server-side)
+async function getDashboardData(): Promise<DashboardData> {
+  // Mock data - replace with actual API calls to your backend
+  // In production, fetch from: /api/progress/dashboard-summary, /api/progress/recent-chapters, etc.
+  
+  return {
+    stats: {
+      examReadiness: 67,
+      topicsMastered: 14,
+      xpThisWeek: 340,
+      currentLevel: 2,
+      xpToNextLevel: 500,
+      streakDays: 3,
+      topicsStudied: 7,
+      studiedDays: [true, false, true, true, false, true, true],
+    },
+    recentChapters: [
+      {
+        _id: "ch1",
+        bookTitle: "Physics Grade 10",
+        chapterTitle: "Chapter 1: Simple Harmonic Motion",
+        progress: 45,
+        href: "/books/physics-10/chapter-1",
+      },
+      {
+        _id: "ch2",
+        bookTitle: "Chemistry Grade 10",
+        chapterTitle: "Chapter 3: Chemical Bonding",
+        progress: 20,
+        href: "/books/chemistry-10/chapter-3",
+      },
+    ],
+    books: [
+      {
+        _id: "b1",
+        title: "Physics Grade 10",
+        subject: "Physics",
+        program_name: "Grade 10",
+        board: "Punjab Board",
+        total_topics: 92,
+        topicsRead: 14,
+      },
+      {
+        _id: "b2",
+        title: "Chemistry Grade 10",
+        subject: "Chemistry",
+        program_name: "Grade 10",
+        board: "Punjab Board",
+        total_topics: 78,
+        topicsRead: 8,
+      },
+      {
+        _id: "b3",
+        title: "Mathematics Grade 10",
+        subject: "Mathematics",
+        program_name: "Grade 10",
+        board: "Punjab Board",
+        total_topics: 120,
+        topicsRead: 22,
+      },
+      {
+        _id: "b4",
+        title: "Biology Grade 10",
+        subject: "Biology",
+        program_name: "Grade 10",
+        board: "Punjab Board",
+        total_topics: 85,
+        topicsRead: 5,
+      },
+    ],
+    hotTopics: [
+      {
+        _id: "t1",
+        title: "Vernier Callipers",
+        exam_frequency_count: 4,
+        slug: "vernier-callipers",
+      },
+      {
+        _id: "t2",
+        title: "Simple Harmonic Motion",
+        exam_frequency_count: 5,
+        slug: "simple-harmonic-motion",
+      },
+      {
+        _id: "t3",
+        title: "Chemical Bonding",
+        exam_frequency_count: 3,
+        slug: "chemical-bonding",
+      },
+      {
+        _id: "t4",
+        title: "Quadratic Equations",
+        exam_frequency_count: 4,
+        slug: "quadratic-equations",
+      },
+    ],
+    vaultItems: [
+      {
+        _id: "v1",
+        topicTitle: "Vernier Callipers - Key Formulas",
+        itemType: "flashcard",
+        createdAt: "2025-01-15T10:30:00Z",
+      },
+      {
+        _id: "v2",
+        topicTitle: "SHM Graph Explanation",
+        itemType: "bookmark",
+        createdAt: "2025-01-14T14:20:00Z",
+      },
+      {
+        _id: "v3",
+        topicTitle: "Ionic Bond Notes",
+        itemType: "note",
+        createdAt: "2025-01-13T09:15:00Z",
+      },
+    ],
+    recentQuizzes: [
+      {
+        _id: "q1",
+        topicTitle: "Vernier Callipers",
+        score: 85,
+        status: "mastered",
+        date: "2 days ago",
+      },
+      {
+        _id: "q2",
+        topicTitle: "Kinematics",
+        score: 60,
+        status: "retry",
+        date: "5 days ago",
+      },
+      {
+        _id: "q3",
+        topicTitle: "Chemical Bonding",
+        score: 72,
+        status: "in-progress",
+        date: "1 week ago",
+      },
+    ],
+    firstName: "Ahmed",
+  };
+}
 
-  if (error) {
-    return (
-      <AppShell>
-        <PageContainer title="Dashboard">
-          <ErrorState error={error.message} onRetry={() => mutate()} />
-        </PageContainer>
-      </AppShell>
-    );
-  }
+function getGreeting(firstName: string): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return `Good morning, ${firstName}.`;
+  if (hour < 17) return `Good afternoon, ${firstName}.`;
+  return `Good evening, ${firstName}.`;
+}
 
-  if (!data) {
-    return (
-      <AppShell>
-        <PageContainer title="Dashboard">
-          <DashboardSkeleton />
-        </PageContainer>
-      </AppShell>
-    );
-  }
-
-  if (data.books.length === 0) {
-    return (
-      <AppShell>
-        <PageContainer title="Dashboard">
-          <EmptyState />
-        </PageContainer>
-      </AppShell>
-    );
-  }
+// Main dashboard content component
+async function DashboardContent() {
+  const data = await getDashboardData();
 
   return (
-    <AppShell>
-      <PageContainer title="Welcome Back">
-        <div className="space-y-8">
-          {/* XP Tracker Section */}
-          <section aria-label="Progress Overview">
-            <XPTracker 
-              currentXP={data.totalXP} 
-              nextLevelXP={(Math.floor(data.totalXP / 100) + 1) * 100}
-              level={Math.floor(data.totalXP / 100) + 1}
-            />
-          </section>
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-1">
+          {getGreeting(data.firstName)}
+        </h1>
+        <p className="text-slate-500">Here&apos;s where you left off.</p>
+      </div>
 
-          {/* Continue Learning Section */}
-          {data.recentProgress.length > 0 && (
-            <section aria-label="Continue Learning">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
-                  <Clock className="text-primary" size={20} />
-                  Continue Learning
-                </h2>
-                <Link href="/practice">
-                  <Button variant="ghost" size="sm" icon={<ArrowRight size={16} />}>
-                    View All
-                  </Button>
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {data.recentProgress.slice(0, 2).map((progress: any) => (
-                  <Card key={progress.id} variant="elevated" className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold text-text-primary">{progress.topicTitle}</h3>
-                        <p className="text-sm text-text-muted">{progress.bookTitle}</p>
-                      </div>
-                      <Badge variant="primary">{progress.progress}%</Badge>
-                    </div>
-                    <div className="w-full bg-bg-tertiary rounded-full h-2 mb-3">
-                      <div 
-                        className="bg-primary h-2 rounded-full transition-all"
-                        style={{ width: `${progress.progress}%` }}
-                      />
-                    </div>
-                    <Link href={`/topics/${progress.topicId}`}>
-                      <Button variant="outline" size="sm" className="w-full">
-                        Continue
-                      </Button>
-                    </Link>
-                  </Card>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Recent Books Section */}
-          <section aria-label="Your Books">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
-                <BookOpen className="text-primary" size={20} />
-                Your Books
-              </h2>
-              <Link href="/books">
-                <Button variant="ghost" size="sm" icon={<ArrowRight size={16} />}>
-                  View All
-                </Button>
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {data.books.slice(0, 6).map((book) => (
-                <BookCard 
-                  key={book._id} 
-                  book={book} 
-                  showProgress={true}
-                />
-              ))}
-            </div>
-          </section>
-
-          {/* Mastery Stats */}
-          {data.masteredCount > 0 && (
-            <section aria-label="Achievements">
-              <Card variant="elevated" className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary/10 rounded-full">
-                    <Trophy className="text-primary" size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-text-primary">{data.masteredCount} Topics Mastered</h3>
-                    <p className="text-sm text-text-muted">Keep up the great work!</p>
-                  </div>
-                  <Star className="ml-auto text-warning" size={24} />
-                </div>
-              </Card>
-            </section>
-          )}
+      {/* Row 1: Stats Strip */}
+      <section aria-label="Dashboard Statistics">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            icon={<Trophy className="w-5 h-5 text-emerald-600" aria-hidden="true" />}
+            label="Exam Readiness"
+            value={`${data.stats.examReadiness}%`}
+            delay={0}
+          />
+          <StatCard
+            icon={<BookOpen className="w-5 h-5 text-emerald-600" aria-hidden="true" />}
+            label="Topics Mastered"
+            value={data.stats.topicsMastered.toString()}
+            delay={0.05}
+          />
+          <StatCard
+            icon={<Zap className="w-5 h-5 text-emerald-600" aria-hidden="true" />}
+            label="XP This Week"
+            value={`${data.stats.xpThisWeek} XP`}
+            delay={0.1}
+          />
+          <StatCard
+            icon={<TrendingUp className="w-5 h-5 text-emerald-600" aria-hidden="true" />}
+            label="Current Level"
+            value={`Level ${data.stats.currentLevel}`}
+            delay={0.15}
+          />
         </div>
+      </section>
+
+      {/* Row 2: Continue Studying + Streak Card */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6" aria-label="Study Progress">
+        <div className="lg:col-span-2">
+          <ContinueStudyingCard chapters={data.recentChapters} />
+        </div>
+        <div>
+          <StreakCard
+            xpThisWeek={data.stats.xpThisWeek}
+            xpToNextLevel={data.stats.xpToNextLevel}
+            streakDays={data.stats.streakDays}
+            topicsStudied={data.stats.topicsStudied}
+            studiedDays={data.stats.studiedDays}
+          />
+        </div>
+      </section>
+
+      {/* Row 3: Your Books */}
+      <section aria-label="Your Books">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-slate-800">📚 Your Books</h2>
+          <a href="/books" className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
+            View All <ChevronRight className="w-4 h-4" />
+          </a>
+        </div>
+        <div className="flex gap-4 overflow-x-auto snap-x pb-2">
+          {data.books.map((book) => {
+            const progress = book.topicsRead ? Math.round((book.topicsRead / book.total_topics) * 100) : 0;
+            return (
+              <div
+                key={book._id}
+                className="w-40 flex-shrink-0 bg-white border border-slate-100 rounded-xl p-4 snap-start hover:shadow-md transition-shadow"
+              >
+                <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center mb-3">
+                  <BookOpen className="w-5 h-5 text-emerald-600" aria-hidden="true" />
+                </div>
+                <h3 className="font-semibold text-slate-800 text-sm mb-1 line-clamp-2">{book.title}</h3>
+                <p className="text-xs text-slate-500 mb-3">
+                  {book.program_name} · {book.board}
+                </p>
+                <div className="mb-2">
+                  <div className="flex justify-between text-xs text-slate-500 mb-1">
+                    <span>{book.topicsRead || 0} / {book.total_topics}</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-emerald-600 h-full rounded-full transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+                <a
+                  href={`/books/${book._id}`}
+                  className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                >
+                  Open <ChevronRight className="w-3 h-3" />
+                </a>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Row 4: Hot Topics + Vault */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6" aria-label="Hot Topics and Vault">
+        <HotTopicsCard topics={data.hotTopics} />
+        <VaultSnapshotCard items={data.vaultItems} />
+      </section>
+
+      {/* Row 5: Recent Quiz Activity */}
+      <section aria-label="Recent Quizzes">
+        <div className="bg-white border border-slate-100 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-800">Recent Quizzes</h2>
+            <a href="/quiz" className="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+              Take a new quiz →
+            </a>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs text-slate-500 uppercase tracking-wide border-b border-slate-100">
+                  <th className="pb-3 font-medium">Topic</th>
+                  <th className="pb-3 font-medium">Score</th>
+                  <th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 font-medium">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recentQuizzes.map((quiz, idx) => (
+                  <tr
+                    key={quiz._id}
+                    className={`border-b border-slate-100 last:border-0 ${
+                      idx % 2 === 0 ? "bg-slate-50" : "bg-white"
+                    }`}
+                  >
+                    <td className="py-3 pr-4">
+                      <span className="font-medium text-slate-800 text-sm">{quiz.topicTitle}</span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className={`font-semibold ${
+                        quiz.score >= 80 ? "text-green-600" : quiz.score >= 60 ? "text-amber-600" : "text-red-600"
+                      }`}>
+                        {quiz.score}%
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        quiz.status === "mastered"
+                          ? "bg-green-100 text-green-700"
+                          : quiz.status === "retry"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}>
+                        {quiz.status === "mastered" && "✅"}
+                        {quiz.status === "retry" && "🔄"}
+                        {quiz.status === "in-progress" && "⏳"}
+                        {quiz.status.charAt(0).toUpperCase() + quiz.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="py-3 text-sm text-slate-500">{quiz.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// Main page component (Server Component)
+export default function DashboardPage() {
+  return (
+    <AppShell>
+      <PageContainer title="Dashboard">
+        <Suspense fallback={<StatsStripSkeleton />}>
+          <DashboardContent />
+        </Suspense>
       </PageContainer>
     </AppShell>
   );
