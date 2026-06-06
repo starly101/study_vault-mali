@@ -1,51 +1,29 @@
-import { verifyToken } from './jwt.js';
-import connectDB from '@studyvault/db/connect.js';
-import User from '@studyvault/db/models/User.js';
+import jwt from 'jsonwebtoken'
+import { cookies } from 'next/headers'
 
-// Use in any protected API route: const user = await requireAuth(request)
-export async function requireAuth(request) {
-  const header = request.headers.get('authorization') || '';
-  // Also check cookie (for SSR pages)
-  const cookieHeader = request.headers.get('cookie') || '';
-  const cookieToken = cookieHeader.match(/sv_token=([^;]+)/)?.[1];
-  
-  const token = header.startsWith('Bearer ') ? header.slice(7) : cookieToken;
-  
-  if (!token) {
-    // No token – treat as guest (unauthenticated)
-    return null;
-  }
-
-  let decoded;
+export async function requireAuth(req) {
   try {
-    decoded = verifyToken(token);
+    // Try Authorization header first
+    const authHeader = req?.headers?.get('authorization')
+    let token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+    // Fall back to cookie
+    if (!token) {
+      const cookieStore = await cookies()
+      token = cookieStore.get('sv_token')?.value
+    }
+
+    if (!token) return null
+
+    const decoded = jwt.verify(token, process.env.MONGODB_JWT_SECRET)
+    return decoded
   } catch {
-    return null;
+    return null
   }
-
-  await connectDB();
-  const user = await User.findById(decoded.userId)
-    .select('-password_hash -otp -password_reset_token')
-    .lean();
-
-  if (!user) {
-    throw Response.json({ success: false, error: 'User not found' }, { status: 401 });
-  }
-
-  return user;
 }
 
-  try {
-    const user = await requireAuth(request);
-    if (!user) {
-      // Guest user – skip admin check
-      return null;
-    }
-    if (!['admin', 'superadmin'].includes(user.role)) {
-      throw Response.json({ success: false, error: 'Forbidden — admin only' }, { status: 403 });
-    }
-    return user;
-  } catch (err) {
-    // If requireAuth returns null, just propagate null
-    return null;
-  }
+export async function requireAdmin(req) {
+  const user = await requireAuth(req)
+  if (!user || user.role !== 'admin') return null
+  return user
+}
