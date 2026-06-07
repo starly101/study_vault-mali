@@ -38,11 +38,6 @@ export async function loadBookReaderData(
   subjectSlug: string,
   opts?: { programSlug?: string; boardSlug?: string }
 ): Promise<BookReaderData> {
-  console.log('\n==================================================');
-  console.log('DEBUG: loadBookReaderData called with:');
-  console.log('subjectSlug:', subjectSlug);
-  console.log('opts:', JSON.stringify(opts));
-  console.log('==================================================\n');
 
   await connectDB();
   const user = await getUser();
@@ -51,22 +46,45 @@ export async function loadBookReaderData(
 
   let book: any = null;
   let program: any = null;
-  const subjectMatcher = {
-    $or: [{ subject_slug: subjectSlug }, { slug: subjectSlug }],
+  
+  // Try to match subject slug exactly, or try variations (e.g. physics-10 -> physics)
+  const getSubjectMatcher = (slug: string) => {
+    const variations = [slug];
+    const gradeSuffixMatch = slug.match(/^(.+)-(\d+)$/);
+    if (gradeSuffixMatch) {
+      variations.push(gradeSuffixMatch[1]);
+    }
+    return {
+      $or: [
+        { subject_slug: { $in: variations } },
+        { slug: { $in: variations } }
+      ],
+    };
   };
+
+  const subjectMatcher = getSubjectMatcher(subjectSlug);
 
   if (opts?.programSlug && opts?.boardSlug) {
     program = await Program.findOne({ slug: opts.programSlug }).lean();
-    if (!program) notFound();
+    if (!program) {
+      notFound();
+    }
 
     const Board = (await import('@studyvault/db/models/Board')).default as any;
+    
+    // Normalize board slug for better matching
+    const normalizedBoardSlug = opts.boardSlug.toLowerCase().replace(/-/g, ' ');
     const board = await Board.findOne({
       $or: [
         { slug: opts.boardSlug.toLowerCase() },
         { short_code: opts.boardSlug.toUpperCase() },
+        { name: new RegExp(`^${normalizedBoardSlug}$`, 'i') },
+        { name: new RegExp(normalizedBoardSlug, 'i') },
       ],
     }).lean();
-    if (!board) notFound();
+    if (!board) {
+      notFound();
+    }
 
     book = await Book.findOne({
       ...subjectMatcher,
@@ -91,7 +109,9 @@ export async function loadBookReaderData(
         .lean();
     }
 
-    if (!book) notFound();
+    if (!book) {
+      notFound();
+    }
   } else if (opts?.programSlug) {
     program = await Program.findOne({ slug: opts.programSlug }).select('name slug').lean();
     if (!program) notFound();
@@ -176,9 +196,6 @@ export async function loadBookReaderData(
     .select('_id title slug chapter_number chapter_number_display summary summary_urdu seo display_order book_id')
     .lean();
   
-  console.log('\n=== 1. SERVER-SIDE: FETCHED BOOK AND CHAPTERS ===');
-  console.log(JSON.stringify({ book, program, chapters }, null, 2));
-  console.log('====================================================\n');
 
   // Don't load all topics by default - they will be fetched on-demand
   const topics: any[] = [];
@@ -290,7 +307,6 @@ export async function loadTopicBySlug(
       .lean();
 
     if (apiTopic) {
-      console.warn(
         `[loadTopicBySlug] Preview topic rendered because it is not live: ${topicSlug} (chapter ${chapter.chapter_number} / book ${book.subject_slug})`
       );
     }

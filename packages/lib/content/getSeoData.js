@@ -16,10 +16,6 @@ function pickSeo(entity) {
   };
 }
 
-function normalizeBoardSlug(slug) {
-  return String(slug || '').trim();
-}
-
 export async function getReaderSeoData({
   boardSlug,
   programSlug,
@@ -29,11 +25,14 @@ export async function getReaderSeoData({
 }) {
   await connectDB();
 
+  const normalizedBoardSlug = String(boardSlug || '').trim().toLowerCase().replace(/-/g, ' ');
   const board = boardSlug
     ? await Board.findOne({
         $or: [
-          { slug: normalizeBoardSlug(boardSlug).toLowerCase() },
-          { short_code: normalizeBoardSlug(boardSlug).toUpperCase() },
+          { slug: boardSlug.toLowerCase() },
+          { short_code: boardSlug.toUpperCase() },
+          { name: new RegExp(`^${normalizedBoardSlug}$`, 'i') },
+          { name: new RegExp(normalizedBoardSlug, 'i') },
         ],
       })
         .select('name slug short_code')

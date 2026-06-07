@@ -1,6 +1,6 @@
 import { unstable_noStore as noStore } from 'next/cache';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { BookChapterIndex } from '@/components/reader/BookChapterIndex';
 import { ChapterReader } from '@/components/reader/ChapterReader';
 import TopicLevelReader from '@/components/reader/TopicLevelReader';
@@ -102,13 +102,22 @@ export default async function ReaderPage({
     programSlug: resolvedParams.programSlug,
   });
 
-  const resolvedBoardSlug =
-    resolvedParams.boardSlug ||
-    data.boardSlug ||
-    data.book.board_id?.short_code ||
-    data.book.board_id?.slug;
-  const activeProgramSlug = resolvedParams.programSlug || data.programSlug;
+  const activeBoardSlug = data.boardSlug || data.book.board_id?.short_code || data.book.board_id?.slug || 'PB';
+  const activeProgramSlug = data.programSlug || resolvedParams.programSlug;
+  const activeSubjectSlug = data.book.subject_slug || data.book.slug || resolvedParams.subjectSlug;
   const activeGrade = data.grade;
+
+  // Enforce canonical URL structure: /[short_board_code]/[programSlug]/[subjectSlug]
+  if (
+    resolvedParams.boardSlug !== activeBoardSlug || 
+    resolvedParams.programSlug !== activeProgramSlug ||
+    resolvedParams.subjectSlug !== activeSubjectSlug
+  ) {
+      const canonical = [activeBoardSlug, activeProgramSlug, activeSubjectSlug];
+      if (chapterSlug) canonical.push(chapterSlug);
+      if (topicSlug) canonical.push(topicSlug);
+      permanentRedirect(`/${canonical.join('/')}`);
+  }
 
   if (!chapterSlug) {
     return (
@@ -116,8 +125,8 @@ export default async function ReaderPage({
         book={data.book}
         program={data.program}
         chapters={data.chapters}
-        subjectSlug={resolvedParams.subjectSlug}
-        boardSlug={resolvedBoardSlug}
+        subjectSlug={activeSubjectSlug}
+        boardSlug={activeBoardSlug}
         programSlug={activeProgramSlug}
         grade={activeGrade}
         userProgress={data.userProgress}
@@ -133,7 +142,7 @@ export default async function ReaderPage({
   const sortedChapters = [...data.chapters].sort(
     (a, b) => (a.display_order ?? a.chapter_number) - (b.display_order ?? b.chapter_number)
   );
-  const chapterIndex = sortedChapters.findIndex((item) => item.slug === chapterSlug);
+  const chapterIndex = sortedChapters.findIndex((item) => item.slug === chapterSlug || String(item.chapter_number) === chapterSlug);
   const prevChapterSlug = chapterIndex > 0 ? sortedChapters[chapterIndex - 1].slug : null;
   const nextChapterSlug =
     chapterIndex >= 0 && chapterIndex < sortedChapters.length - 1
@@ -149,8 +158,8 @@ export default async function ReaderPage({
         chapterTopics={[]}
         chapters={data.chapters}
         isLoggedIn={data.isLoggedIn}
-        boardSlug={resolvedBoardSlug}
-        subjectSlug={resolvedParams.subjectSlug}
+        boardSlug={activeBoardSlug}
+        subjectSlug={activeSubjectSlug}
         programSlug={activeProgramSlug}
         grade={activeGrade}
         prevChapterSlug={prevChapterSlug}
@@ -159,9 +168,9 @@ export default async function ReaderPage({
     );
   }
 
-  const topicData = await loadTopicBySlug(topicSlug, resolvedParams.subjectSlug, chapterSlug, {
-    boardSlug: resolvedParams.boardSlug,
-    programSlug: resolvedParams.programSlug,
+  const topicData = await loadTopicBySlug(topicSlug, activeSubjectSlug, chapterSlug, {
+    boardSlug: activeBoardSlug,
+    programSlug: activeProgramSlug,
   });
 
   return (
@@ -171,8 +180,8 @@ export default async function ReaderPage({
       nextTopic={topicData.nextTopic}
       chapters={topicData.chapters}
       isLoggedIn={topicData.isLoggedIn}
-      boardSlug={resolvedBoardSlug}
-      subjectSlug={resolvedParams.subjectSlug}
+      boardSlug={activeBoardSlug}
+      subjectSlug={activeSubjectSlug}
       programSlug={topicData.programSlug}
       grade={topicData.grade || activeGrade}
     />
