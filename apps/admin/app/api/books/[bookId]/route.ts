@@ -85,9 +85,9 @@ export async function DELETE(
       );
     }
 
-    const chapters = await Chapter.find({ book_id: params.bookId }).select('_id').lean();
+    const chapters = await Chapter.find({ book_id: bookId }).select('_id').lean();
     const chapterIds = chapters.map((chapter: any) => chapter._id);
-    const topics = await Topic.find({ book_id: params.bookId }).select('_id').lean();
+    const topics = await Topic.find({ book_id: bookId }).select('_id').lean();
     const topicIds = topics.map((topic: any) => topic._id);
 
     const [
@@ -97,19 +97,19 @@ export async function DELETE(
       topicResult,
       chapterResult,
     ] = await Promise.all([
-      Question.deleteMany({ $or: [{ book_id: params.bookId }, { topic_id: { $in: topicIds } }] }),
-      UserProgress.deleteMany({ $or: [{ book_id: params.bookId }, { topic_id: { $in: topicIds } }] }),
+      Question.deleteMany({ $or: [{ book_id: bookId }, { topic_id: { $in: topicIds } }] }),
+      UserProgress.deleteMany({ $or: [{ book_id: bookId }, { topic_id: { $in: topicIds } }] }),
       UserVault.deleteMany({ $or: [{ chapter_id: { $in: chapterIds } }, { topic_id: { $in: topicIds } }] }),
-      Topic.deleteMany({ book_id: params.bookId }),
-      Chapter.deleteMany({ book_id: params.bookId }),
+      Topic.deleteMany({ book_id: bookId }),
+      Chapter.deleteMany({ book_id: bookId }),
     ]);
 
-    await Book.findByIdAndDelete(params.bookId);
+    await Book.findByIdAndDelete(bookId);
 
     return NextResponse.json({
       success: true,
       data: {
-        deletedBookId: params.bookId,
+        deletedBookId: bookId,
         deletedChapters: chapterResult.deletedCount || 0,
         deletedTopics: topicResult.deletedCount || 0,
         deletedQuestions: questionResult.deletedCount || 0,
