@@ -28,6 +28,7 @@ export default function BooksIngestPage() {
     programSlug?: string;
     subjectSlug?: string;
     chapterNumber?: number;
+    chapterSlug?: string;
   } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   
@@ -263,6 +264,26 @@ export default function BooksIngestPage() {
               )}
               View in Student App
             </button>
+            <button
+              onClick={() => {
+                setBookData(null);
+                setState({ idle: true, loading: false, success: false, error: false });
+                setResult(null);
+                setFormData({
+                  title: '',
+                  gradeLevel: '',
+                  board: '',
+                  subject: '',
+                  description: '',
+                  coverImageUrl: '',
+                  jsonPayload: '',
+                });
+              }}
+              className="mt-3 ml-2 inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <X className="h-4 w-4" />
+              Reset Form
+            </button>
           </div>
         </div>
       )}
@@ -429,85 +450,7 @@ export default function BooksIngestPage() {
         </div>
       </form>
 
-      {/* Preview Modal */}
-      {showPreview && bookPreview && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowPreview(false)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">Book Preview</h2>
-              <button
-                onClick={() => setShowPreview(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-6 w-6 text-gray-500" />
-              </button>
-            </div>
-            <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-6">
-              <div className="space-y-6">
-                {/* Book Info */}
-                <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
-                  <h3 className="font-semibold text-indigo-900 text-lg">{bookPreview.title}</h3>
-                  <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                    <div>
-                      <span className="text-indigo-600 font-medium">Subject:</span>
-                      <span className="ml-2 text-indigo-900">{bookPreview.subject}</span>
-                    </div>
-                    <div>
-                      <span className="text-indigo-600 font-medium">Grade:</span>
-                      <span className="ml-2 text-indigo-900">{bookPreview.grade_level}</span>
-                    </div>
-                    <div>
-                      <span className="text-indigo-600 font-medium">Board:</span>
-                      <span className="ml-2 text-indigo-900">{bookPreview.board}</span>
-                    </div>
-                    {bookPreview.edition_year && (
-                      <div>
-                        <span className="text-indigo-600 font-medium">Edition:</span>
-                        <span className="ml-2 text-indigo-900">{bookPreview.edition_year}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-                {/* Chapters and Topics */}
-                {bookPreview.chapters && bookPreview.chapters.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900 text-lg">Chapters & Topics</h3>
-                    {bookPreview.chapters.map((chapter) => (
-                      <div key={chapter._id} className="border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                          <h4 className="font-medium text-gray-900">
-                            Chapter {chapter.chapter_number}: {chapter.title}
-                          </h4>
-                        </div>
-                        <div className="p-4">
-                          {chapter.topics && chapter.topics.length > 0 ? (
-                            <ul className="space-y-2">
-                              {chapter.topics.map((topic) => (
-                                <li key={topic._id} className="flex items-start gap-2 text-sm">
-                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium flex-shrink-0">
-                                    {topic.topic_number}
-                                  </span>
-                                  <span className="text-gray-900 font-medium">{topic.title}</span>
-                                  {topic.slug && (
-                                    <span className="text-gray-400 text-xs ml-auto">/{topic.slug}</span>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-gray-500 text-sm italic">No topics in this chapter</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Help Section */}
       <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
