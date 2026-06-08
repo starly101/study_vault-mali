@@ -86,6 +86,7 @@ export async function ingestBook(deepseekJson, adminUserId) {
       book = existingCurrentBook;
       book.board = boardVal;
       book.grade = gradeVal;
+      book.is_live = true;
       await book.save();
       log.push(`✓ Updating existing book: ${book.title}`);
     } else if (existingCurrentBook) {
@@ -103,6 +104,7 @@ export async function ingestBook(deepseekJson, adminUserId) {
         edition_year: book_metadata.edition_year,
         edition_label: `${book_metadata.edition_year} Edition`,
         is_current_edition: true,
+        is_live: true,
         previous_edition_id: existingCurrentBook._id,
         metadata: {
           authors: book_metadata.authors,
@@ -111,7 +113,7 @@ export async function ingestBook(deepseekJson, adminUserId) {
           script_direction: book_metadata.script_direction,
           grade_level: book_metadata.grade_level,
         },
-        ingestion_status: 'processing',
+        ingestion_status: 'complete',
         created_by: adminUserId,
       });
       log.push(`✓ Created new edition: ${book.edition_year}. Previous edition archived.`);
@@ -129,6 +131,7 @@ export async function ingestBook(deepseekJson, adminUserId) {
         edition_year: book_metadata.edition_year,
         edition_label: `${book_metadata.edition_year} Edition`,
         is_current_edition: true,
+        is_live: true,
         metadata: {
           authors: book_metadata.authors,
           publisher: book_metadata.publisher,
@@ -136,7 +139,7 @@ export async function ingestBook(deepseekJson, adminUserId) {
           script_direction: book_metadata.script_direction,
           grade_level: book_metadata.grade_level,
         },
-        ingestion_status: 'processing',
+        ingestion_status: 'complete',
         created_by: adminUserId,
       });
       log.push(`✓ Created new book: ${book.title}`);
@@ -163,7 +166,7 @@ export async function ingestBook(deepseekJson, adminUserId) {
         page_end: chapter.page_end,
         seo: chapter.seo,
         display_order: chapter.chapter_number,
-        is_live: false,
+        is_live: true,
       });
     } else {
       // Update chapter metadata
@@ -171,6 +174,7 @@ export async function ingestBook(deepseekJson, adminUserId) {
       chapterDoc.student_learning_outcomes = chapter.student_learning_outcomes;
       chapterDoc.summary = chapter.chapter_summary;
       chapterDoc.seo = chapter.seo;
+      chapterDoc.is_live = true;
     }
 
     // STEP 5: Upsert Topics with version diff detection
@@ -236,8 +240,8 @@ export async function ingestBook(deepseekJson, adminUserId) {
         previous_version_id: previousVersionId,
         content_hash: contentHash,
         seo: topicData.seo || {},
-        is_live: false,
-        workflow_status: 'draft',
+        is_live: true,
+        workflow_status: 'published',
         created_by: adminUserId,
       };
 
