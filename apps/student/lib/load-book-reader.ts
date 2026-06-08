@@ -72,11 +72,15 @@ export type BookReaderData = {
 
 export async function loadBookReaderData(
   subjectSlug: string,
-  opts?: { programSlug?: string; boardSlug?: string }
+  opts?: { programSlug?: string; boardSlug?: string; showAll?: boolean }
 ): Promise<BookReaderData> {
   await connectDB();
   const user = await getAuthUser();
   const isLoggedIn = Boolean(user);
+  // Admins can see all content (including non-live), or if explicitly requested via showAll flag
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const showAll = opts?.showAll ?? isAdmin;
+  const liveFilter = showAll ? {} : { is_live: true };
 
   const normalizedSubjectSlug = normalizeSlug(subjectSlug);
   const normalizedSubjectName = normalizedSubjectSlug.replace(/-/g, ' ');
@@ -123,7 +127,7 @@ export async function loadBookReaderData(
       ...subjectMatcher,
       program_id: program._id,
       board_id: board._id,
-      is_live: true,
+      ...liveFilter,
     })
       .sort({ edition_year: -1 })
       .select('title slug subject subject_slug grade program_id board_id metadata seo edition_year is_live is_current_edition')
@@ -146,7 +150,7 @@ export async function loadBookReaderData(
       .lean();
     if (!program) notFound();
 
-    book = await Book.findOne({ ...subjectMatcher, program_id: program._id, is_live: true })
+    book = await Book.findOne({ ...subjectMatcher, program_id: program._id, ...liveFilter })
       .sort({ edition_year: -1 })
       .select('title slug subject subject_slug grade program_id board_id metadata seo edition_year is_live is_current_edition')
       .populate('board_id', 'name slug short_code')
@@ -161,7 +165,7 @@ export async function loadBookReaderData(
       ...(contentProfile?.boardId ? { board_id: contentProfile.boardId } : {}),
     };
 
-    book = await Book.findOne({ ...bookQuery, is_live: true })
+    book = await Book.findOne({ ...bookQuery, ...liveFilter })
       .sort({ edition_year: -1 })
       .select('title slug subject subject_slug grade program_id board_id metadata seo edition_year is_live is_current_edition')
       .populate('board_id', 'name slug short_code')
@@ -172,7 +176,7 @@ export async function loadBookReaderData(
     if (!program) notFound();
   }
 
-  const chapters = await Chapter.find({ book_id: book._id, is_live: true })
+  const chapters = await Chapter.find({ book_id: book._id, ...liveFilter })
     .sort({ display_order: 1, chapter_number: 1 })
     .select('_id title slug chapter_number chapter_number_display summary summary_urdu seo display_order book_id')
     .lean();
@@ -227,7 +231,7 @@ export async function loadTopicBySlug(
   topicSlug: string,
   subjectSlug: string,
   chapterSlug: string | number,
-  opts?: { programSlug?: string; boardSlug?: string }
+  opts?: { programSlug?: string; boardSlug?: string; showAll?: boolean }
 ): Promise<{
   topic: any;
   previousTopic: any;
@@ -243,8 +247,11 @@ export async function loadTopicBySlug(
   await connectDB();
   const user = await getAuthUser();
   const isLoggedIn = Boolean(user);
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const showAll = opts?.showAll ?? isAdmin;
+  const liveFilter = showAll ? {} : { is_live: true };
 
-  const bookData = await loadBookReaderData(subjectSlug, opts);
+  const bookData = await loadBookReaderData(subjectSlug, { ...opts, showAll });
   const { book, program, chapters, boardSlug, programSlug: resolvedProgramSlug, grade } = bookData;
   const activeProgramSlug = opts?.programSlug || resolvedProgramSlug;
 
@@ -255,7 +262,7 @@ export async function loadTopicBySlug(
     slug: topicSlug,
     chapter_id: chapter._id,
     book_id: book._id,
-    is_live: true,
+    ...liveFilter,
   })
     .select('title slug topic_number display_order difficulty estimated_read_time exam_frequency key_terms book_mcqs book_problems book_short_questions content_blocks chapter_id book_id program_id board_id seo is_live')
     .populate('chapter_id', 'title chapter_number slug')
@@ -269,7 +276,7 @@ export async function loadTopicBySlug(
   let previousTopic = await Topic.findOne({
     chapter_id: chapter._id,
     display_order: { $lt: apiTopic.display_order },
-    is_live: true,
+    ...liveFilter,
   })
     .sort({ display_order: -1 })
     .select('_id title slug display_order chapter_id')
@@ -285,7 +292,7 @@ export async function loadTopicBySlug(
     if (prevChapter) {
       previousTopic = await Topic.findOne({
         chapter_id: prevChapter._id,
-        is_live: true,
+        ...liveFilter,
       })
         .sort({ display_order: -1 })
         .select('_id title slug display_order chapter_id')
@@ -299,7 +306,7 @@ export async function loadTopicBySlug(
   let nextTopic = await Topic.findOne({
     chapter_id: chapter._id,
     display_order: { $gt: apiTopic.display_order },
-    is_live: true,
+    ...liveFilter,
   })
     .sort({ display_order: 1 })
     .select('_id title slug display_order chapter_id')
@@ -315,7 +322,7 @@ export async function loadTopicBySlug(
     if (nextChapter) {
       nextTopic = await Topic.findOne({
         chapter_id: nextChapter._id,
-        is_live: true,
+        ...liveFilter,
       })
         .sort({ display_order: 1 })
         .select('_id title slug display_order chapter_id')
