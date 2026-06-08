@@ -258,6 +258,8 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
         edition_year: book_metadata.edition_year,
         edition_label: `${book_metadata.edition_year} Edition`,
         is_current_edition: true,
+        is_live: true,
+        ingestion_status: 'complete',
         order: 1,
       });
       log.push(`Created book: ${book.title}`);
@@ -271,6 +273,8 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
       book.edition_year = book_metadata.edition_year;
       book.edition_label = `${book_metadata.edition_year} Edition`;
       book.is_current_edition = true;
+      book.is_live = true;
+      book.ingestion_status = 'complete';
       await book.save();
       log.push(`Updated book: ${book.title}`);
     }
@@ -377,8 +381,8 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
           chapter_title: chapter.title,
           seo: topicData.seo || {},
           version_status: 'new' as const,
-          is_live: false,
-          workflow_status: 'draft' as const,
+          is_live: true,
+          workflow_status: 'published' as const,
         });
         topicsCreated++;
         log.push(`Created topic: ${topicData.title}`);
