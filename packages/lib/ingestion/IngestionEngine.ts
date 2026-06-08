@@ -210,15 +210,23 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
     }
     
     // STEP 2: Upsert Board - find by slug only (shared across programs), then ensure program_id linkage
+    const boardSlug = generateSlug(book_metadata.board);
+    const boardShortCode = book_metadata.board.substring(0, 2).toUpperCase();
+    
+    // Special handling for Punjab board - use 'pb' as slug
+    const isPunjabBoard = boardSlug.includes('punjab') || boardShortCode === 'PB';
+    const finalBoardSlug = isPunjabBoard ? 'pb' : boardSlug;
+    const finalShortCode = isPunjabBoard ? 'PB' : boardShortCode;
+    
     let board = await Board.findOne({ 
-      slug: generateSlug(book_metadata.board)
+      slug: finalBoardSlug
     });
     
     if (!board) {
       board = await Board.create({
         name: book_metadata.board,
-        slug: generateSlug(book_metadata.board),
-        short_code: book_metadata.board.substring(0, 10).toUpperCase(),
+        slug: finalBoardSlug,
+        short_code: finalShortCode,
         program_id: program._id,
       });
       log.push(`Created board: ${board.name}`);
