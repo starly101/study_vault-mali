@@ -382,7 +382,7 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
           seo: topicData.seo || {},
           version_status: 'new' as const,
           is_live: true,
-          workflow_status: 'published' as const,
+          workflow_status: 'live' as const,
         });
         topicsCreated++;
         log.push(`Created topic: ${topicData.title}`);
@@ -412,6 +412,8 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
           topic.quran_textbook_tafsir = topicData.quran_textbook_tafsir || topic.quran_textbook_tafsir;
           topic.seo = topicData.seo || topic.seo;
           topic.version_status = 'modified' as const;
+          topic.is_live = true;
+          topic.workflow_status = 'live';
           await topic.save();
           topicsUpdated++;
           log.push(`Updated topic: ${topicData.title}`);
