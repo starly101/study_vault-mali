@@ -20,40 +20,15 @@ interface IngestionResult {
   };
 }
 
-interface TopicPreview {
-  _id: string;
-  title: string;
-  slug?: string;
-  topic_number: string;
-  raw_text?: string;
-  clean_html?: string;
-  content_blocks?: any[];
-}
-
-interface ChapterPreview {
-  _id: string;
-  chapter_number: number;
-  title: string;
-  slug?: string;
-  topics: TopicPreview[];
-}
-
-interface BookPreview {
-  _id: string;
-  title: string;
-  subject: string;
-  subject_slug: string;
-  grade_level: string;
-  board: string;
-  edition_year?: number;
-  chapters?: ChapterPreview[];
-}
-
 export default function BooksIngestPage() {
   const [state, setState] = useState<IngestionState>({ idle: true, loading: false, success: false, error: false });
   const [result, setResult] = useState<IngestionResult | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [bookPreview, setBookPreview] = useState<BookPreview | null>(null);
+  const [bookData, setBookData] = useState<{
+    boardSlug?: string;
+    programSlug?: string;
+    subjectSlug?: string;
+    chapterNumber?: number;
+  } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -180,33 +155,12 @@ export default function BooksIngestPage() {
 
       setResult(data);
       setState({ idle: false, loading: false, success: true, error: false });
-      
-      // Fetch book preview after successful ingestion
-      if (data.data?.bookId) {
-        fetchBookPreview(data.data.bookId);
-      }
     } catch (error: any) {
       setResult({
         success: false,
         message: error.message || 'An unexpected error occurred',
       });
       setState({ idle: false, loading: false, success: false, error: true });
-    }
-  };
-
-  const fetchBookPreview = async (bookId: string) => {
-    setLoadingPreview(true);
-    try {
-      const response = await fetch(`/api/books/${bookId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setBookPreview(data);
-        setShowPreview(true);
-      }
-    } catch (error) {
-      console.error('Failed to fetch book preview:', error);
-    } finally {
-      setLoadingPreview(false);
     }
   };
 
@@ -223,6 +177,17 @@ export default function BooksIngestPage() {
       try {
         const parsed = JSON.parse(value);
         if (parsed.book_metadata) {
+          const boardSlug = parsed.book_metadata.board 
+            ? parsed.book_metadata.board.toLowerCase().replace(/[^a-z0-9]+/g, '-') 
+            : '';
+          const programSlug = parsed.book_metadata.grade_level 
+            ? parsed.book_metadata.grade_level.toLowerCase().replace(/[^a-z0-9]+/g, '-') 
+            : '';
+          const subjectSlug = parsed.book_metadata.subject_slug 
+            || (parsed.book_metadata.subject 
+              ? parsed.book_metadata.subject.toLowerCase().replace(/[^a-z0-9]+/g, '-') 
+              : '');
+          
           setFormData(prev => ({
             ...prev,
             title: parsed.book_metadata.title || '',
@@ -232,6 +197,13 @@ export default function BooksIngestPage() {
             description: parsed.book_metadata.description || '',
             coverImageUrl: parsed.book_metadata.cover_image_url || '',
           }));
+          
+          setBookData({
+            boardSlug,
+            programSlug,
+            subjectSlug,
+            chapterNumber: chapterNum,
+          });
         }
       } catch {
         // Invalid JSON, ignore auto-fill
@@ -267,7 +239,12 @@ export default function BooksIngestPage() {
               </div>
             )}
             <button
-              onClick={() => bookPreview ? setShowPreview(true) : fetchBookPreview(result.data!.bookId!)}
+              onClick={() => {
+                if (bookData?.boardSlug && bookData?.programSlug && bookData?.subjectSlug && bookData?.chapterNumber) {
+                  const chapterSlug = `chapter-${bookData.chapterNumber}`;
+                  window.open(`/${bookData.boardSlug}/${bookData.programSlug}/${bookData.subjectSlug}/${chapterSlug}`, '_blank');
+                }
+              }}
               disabled={loadingPreview}
               className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg transition-colors"
             >
@@ -276,7 +253,7 @@ export default function BooksIngestPage() {
               ) : (
                 <Eye className="h-4 w-4" />
               )}
-              View Preview
+              View in Student App
             </button>
           </div>
         </div>
