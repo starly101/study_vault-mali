@@ -40,6 +40,16 @@ export default function BooksIngestPage() {
     setResult(null);
 
     try {
+      const parsedJson = JSON.parse(formData.jsonPayload);
+      
+      // Validate chapter data
+      if (!parsedJson.chapter) {
+        throw new Error('JSON payload must contain a "chapter" object');
+      }
+      if (typeof parsedJson.chapter.number !== 'number' || parsedJson.chapter.number < 1) {
+        throw new Error('Chapter must have a valid "number" field (positive integer)');
+      }
+
       const ingestionData = {
         book_metadata: {
           title: formData.title,
@@ -49,8 +59,12 @@ export default function BooksIngestPage() {
           description: formData.description || undefined,
           cover_image_url: formData.coverImageUrl || undefined,
         },
-        chapter: JSON.parse(formData.jsonPayload).chapter || { title: 'Chapter 1', number: 1 },
-        topics: JSON.parse(formData.jsonPayload).topics || [],
+        chapter: {
+          title: parsedJson.chapter.title || `Chapter ${parsedJson.chapter.number}`,
+          number: parsedJson.chapter.number,
+          description: parsedJson.chapter.description || undefined,
+        },
+        topics: parsedJson.topics || [],
       };
 
       const response = await fetch('/api/admin/books/ingest', {
