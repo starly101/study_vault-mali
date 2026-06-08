@@ -121,7 +121,9 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
     }
     
     // STEP 3: Upsert Book
-    const bookSlug = `${generateSlug(book_metadata.subject)}-${generateSlug(book_metadata.title)}`;
+    const subjectSlug = generateSlug(book_metadata.subject);
+    const bookSlug = `${subjectSlug}-${generateSlug(book_metadata.title)}`;
+    const currentYear = new Date().getFullYear();
     let book = await Book.findOne({ 
       slug: bookSlug,
       board_id: board._id 
@@ -131,7 +133,15 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
       book = await Book.create({
         title: book_metadata.title,
         slug: bookSlug,
+        subject: book_metadata.subject,
+        subject_slug: subjectSlug,
+        board: book_metadata.board,
+        grade: book_metadata.grade_level,
+        program_id: program._id,
         board_id: board._id,
+        edition_year: currentYear,
+        edition_label: `${currentYear} Edition`,
+        is_current_edition: true,
         description: book_metadata.description || '',
         cover_image_url: book_metadata.cover_image_url || null,
         order: 1,
@@ -139,6 +149,14 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
       log.push(`Created book: ${book.title}`);
     } else {
       // Update existing book
+      book.subject = book_metadata.subject;
+      book.subject_slug = subjectSlug;
+      book.board = book_metadata.board;
+      book.grade = book_metadata.grade_level;
+      book.program_id = program._id;
+      book.edition_year = currentYear;
+      book.edition_label = `${currentYear} Edition`;
+      book.is_current_edition = true;
       book.description = book_metadata.description || book.description;
       book.cover_image_url = book_metadata.cover_image_url || book.cover_image_url;
       await book.save();
