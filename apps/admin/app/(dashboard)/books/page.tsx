@@ -172,6 +172,41 @@ export default function ManageBooksPage() {
     }
   }
 
+  async function toggleBookLiveStatus(book: Book) {
+    const id = bookKey(book);
+    const newStatus = !book.is_live;
+    
+    try {
+      setPreviewingId(id);
+      const response = await fetch(`/api/books/${id}/toggle-live`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_live: newStatus })
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        setResult({ success: false, error: data.error || 'Failed to update book status' });
+        return;
+      }
+
+      setBooks((current) =>
+        current.map((b) => (b._id === id ? { ...b, is_live: newStatus } : b))
+      );
+      setResult({
+        success: true,
+        message: `"${book.title}" is now ${newStatus ? 'LIVE' : 'DRAFT'}.`,
+      });
+    } catch (error) {
+      setResult({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update book status',
+      });
+    } finally {
+      setPreviewingId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -264,10 +299,20 @@ export default function ManageBooksPage() {
 
                     <div className="flex flex-wrap gap-2">
                       <Button
+                        variant={book.is_live ? 'outline' : 'default'}
+                        size="sm"
+                        onClick={() => toggleBookLiveStatus(book)}
+                        disabled={previewingId === id}
+                      >
+                        <BookOpen className="w-4 h-4 mr-2" />
+                        {previewingId === id ? 'Updating...' : book.is_live ? 'Set Draft' : 'Set Live'}
+                      </Button>
+                      <Button
                         variant="outline"
                         size="sm"
                         onClick={() => previewBook(book)}
-                        disabled={previewingId === id}
+                        disabled={previewingId === id || !book.is_live}
+                        title={!book.is_live ? 'Book must be live to preview' : undefined}
                       >
                         <ExternalLink className="w-4 h-4 mr-2" />
                         {previewingId === id ? 'Opening...' : 'Preview'}

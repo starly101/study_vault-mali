@@ -99,11 +99,11 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
       log.push(`Created program: ${program.name}`);
     }
     
-    // STEP 2: Upsert Board
+    // STEP 2: Upsert Board - find by slug only (shared across programs), then ensure program_id linkage
     let board = await Board.findOne({ 
-      slug: generateSlug(book_metadata.board),
-      program_id: program._id 
+      slug: generateSlug(book_metadata.board)
     });
+    
     if (!board) {
       board = await Board.create({
         name: book_metadata.board,
@@ -112,6 +112,12 @@ export async function processBookIngestion(data: IngestionData): Promise<Ingesti
         program_id: program._id,
       });
       log.push(`Created board: ${board.name}`);
+    } else {
+      // Update program_id if not set (for backward compatibility with old boards)
+      if (!board.program_id) {
+        board.program_id = program._id;
+        await board.save();
+      }
     }
     
     // STEP 3: Upsert Book
