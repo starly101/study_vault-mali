@@ -178,7 +178,7 @@ export default function ManageBooksPage() {
     
     try {
       setPreviewingId(id);
-      const response = await fetch(`/api/books/${id}/toggle-live`, { 
+      const response = await fetch(`/api/books/${id}`, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_live: newStatus })
