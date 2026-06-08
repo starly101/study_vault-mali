@@ -172,7 +172,7 @@ export async function loadBookReaderData(
     if (!program) notFound();
   }
 
-  const chapters = await Chapter.find({ book_id: book._id })
+  const chapters = await Chapter.find({ book_id: book._id, is_live: true })
     .sort({ display_order: 1, chapter_number: 1 })
     .select('_id title slug chapter_number chapter_number_display summary summary_urdu seo display_order book_id')
     .lean();
