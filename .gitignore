@@ -2,73 +2,49 @@
 # Dependencies
 node_modules/
 
-# Build artifacts
-dist/
-build/
-target/
-
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.py.class
 .Python
 env/
 venv/
 .venv/
 .ENV
-.env
-.env.*
-.env.local
-.env.dev
-.env.development
-.env.prod
-.env.production
-.env.test
-.env.testing
-.coverage
-coverage/
-htmlcov/
-.pytest_cache/
-.mypy_cache/
-.tox/
-.hypothesis/
-.eggs/
-*.egg-info/
-.installed.cfg
-.pip-delete-this-directory.txt
-.pyre/
-.pytype/
-.ipynb_checkpoints/
+.ENV.*
+.python-version
 
 # Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-desktop.ini
+# Environment variables
+.env
+.env.local
+.env.*
 
-# IDE specific
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-*.tmp
 
-# Environment specific
-.env.local
-.env.*.local
+# Build outputs
+dist/
+build/
+target/
+coverage/
+htmlcov/
+*.out
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.coverage
 
 # Compressed files
 *.zip

@@ -13,6 +13,7 @@
     "./models/User": "./models/User.js",
     "./models/UserProgress": "./models/UserProgress.js",
     "./models/Question": "./models/Question.js",
+    "./models/Quiz": "./models/Quiz.js",
     "./models/UserVault": "./models/UserVault.js",
     "./models/Subscription": "./models/Subscription.js",
     "./models/QuranWord": "./models/QuranWord.js",
