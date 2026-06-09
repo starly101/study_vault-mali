@@ -5,6 +5,7 @@ import ChapterModel from '@studyvault/db/models/Chapter';
 import BookModel from '@studyvault/db/models/Book';
 import ProgramModel from '@studyvault/db/models/Program';
 import BoardModel from '@studyvault/db/models/Board';
+import UserProgressModel from '@studyvault/db/models/UserProgress';
 import type { ITopic, IChapter, IBook, IProgram, IBoard } from '@studyvault/db/models';
 import { getAuthUser } from '@studyvault/lib/auth/getAuthUser';
 import { resolveUserContentProfile } from '@studyvault/lib/content/bookFilter';
@@ -18,6 +19,7 @@ const Chapter = ChapterModel;
 const Book = BookModel;
 const Program = ProgramModel;
 const Board = BoardModel;
+const UserProgress = UserProgressModel;
 
 export function idString(value: unknown): string {
   if (!value) return '';
@@ -68,6 +70,7 @@ export type BookReaderData = {
   boardSlug?: string;
   programSlug?: string;
   grade?: string;
+  userProgress?: any;
 };
 
 export async function loadBookReaderData(
@@ -181,6 +184,70 @@ export async function loadBookReaderData(
     .select('_id title slug chapter_number chapter_number_display summary summary_urdu seo display_order book_id')
     .lean();
 
+  // Fetch user progress for logged-in users
+  let userProgress = undefined;
+  if (isLoggedIn && user) {
+    const progressDocs = await UserProgress.find({
+      user_id: user._id,
+      book_id: book._id,
+    })
+      .select('topic_id chapter_id is_read scroll_depth_percent time_spent_seconds quiz_attempts highest_quiz_score mastery_status progress_percent last_accessed')
+      .lean();
+
+    const topicIds = progressDocs.map((p: any) => String(p.topic_id));
+    const topicsWithProgress = await Topic.find({ _id: { $in: topicIds } })
+      .select('_id slug chapter_id')
+      .lean();
+
+    const topicChapterMap = new Map<string, string>();
+    topicsWithProgress.forEach((t: any) => {
+      topicChapterMap.set(String(t._id), String(t.chapter_id));
+    });
+
+    const readTopics = progressDocs.filter((p: any) => p.is_read).length;
+    const lastReadDoc = [...progressDocs]
+      .filter((p: any) => p.last_accessed)
+      .sort((a: any, b: any) => new Date(b.last_accessed).getTime() - new Date(a.last_accessed).getTime())[0];
+
+    let lastReadTopicSlug: string | undefined;
+    if (lastReadDoc) {
+      const lastReadTopic = topicsWithProgress.find((t: any) => String(t._id) === String(lastReadDoc.topic_id));
+      if (lastReadTopic) {
+        lastReadTopicSlug = lastReadTopic.slug;
+      }
+    }
+
+    const chapterProgressMap = new Map<string, { readCount: number; totalCount: number; topics: any[] }>();
+    progressDocs.forEach((p: any) => {
+      const chapId = topicChapterMap.get(String(p.topic_id)) || String(p.chapter_id);
+      if (!chapId) return;
+      if (!chapterProgressMap.has(chapId)) {
+        chapterProgressMap.set(chapId, { readCount: 0, totalCount: 0, topics: [] });
+      }
+      const cp = chapterProgressMap.get(chapId)!;
+      cp.totalCount++;
+      if (p.is_read) cp.readCount++;
+      cp.topics.push({
+        topic_id: String(p.topic_id),
+        isRead: p.is_read,
+        quizScore: p.highest_quiz_score,
+        progressPercent: p.progress_percent,
+      });
+    });
+
+    const chapterProgress: Record<string, { readCount: number; totalCount: number; topics: any[] }> = {};
+    chapterProgressMap.forEach((val, key) => {
+      chapterProgress[key] = val;
+    });
+
+    userProgress = {
+      totalTopics: progressDocs.length,
+      readTopics,
+      lastReadTopicSlug,
+      chapterProgress,
+    };
+  }
+
   const serializedBoard =
     book.board_id && typeof book.board_id === 'object'
       ? { ...book.board_id, _id: idString(book.board_id._id) }
@@ -201,9 +268,10 @@ export async function loadBookReaderData(
       book_id: idString(c.book_id),
     })),
     isLoggedIn,
-    boardSlug: canonicalBoardSlug(opts?.boardSlug || book.board_id?.short_code || book.board_id?.slug || null),
+    boardSlug: canonicalBoardSlug(opts?.boardSlug || (serializedBoard?.short_code) || (serializedBoard?.slug) || null),
     programSlug: opts?.programSlug || program.slug,
     grade: book.grade || (book.metadata?.grade_level ? book.metadata.grade_level.replace(/grade\s*/i, '').trim() : undefined) || (program?.slug ? program.slug.replace('grade-', '') : undefined),
+    userProgress,
   });
 }
 
