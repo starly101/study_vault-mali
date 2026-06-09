@@ -4,13 +4,11 @@ import Topic from '@studyvault/db/models/Topic';
 import '@studyvault/db/models/Book';
 import { topicUrl } from '@/lib/reader-urls';
 
-const TopicModel = TopicModel;
-
 export default async function SearchRedirect({ searchParams }: { searchParams: { topicId: string } }) {
   if (!searchParams.topicId) redirect('/dashboard');
 
   await connectDB();
-  const topic = await TopicModel.findById(searchParams.topicId)
+  const topic = await Topic.findById(searchParams.topicId)
     .populate({
       path: 'book_id',
       select: 'subject_slug board_id program_id',
